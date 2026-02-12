@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "cmafit-crm",
+  "private_key_id": "7e996dca9a3ed19f12dfe50ae11713d8f7f3bfc5",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCxRBLuRj8aZFMZ\nc05E8IyYZZ6ULy54LG6cz+Wql8I9LlBagKDGSJr4gCG6v0Q4Y9MI35bzMRRGOVHJ\nZsfYTX5sxr3/4zkaz6UwqPcWXBzJVVTEpCW/Nsk/mAGM2fNKvGxO/tI1sRlUsHSb\nCxQcObvWF2GTxVXhMw/oNOJI8Anq0zTQQCrjPoRNlV4M6iyhxMhgmcXq3E4yxZlR\nsN7MnTlkFPuube5NagkFn39LZQSoJ1l1a2j3Kl3WKXG9qeN85ex1bme+wiY905nU\nRiPnqHnmHPDlo0SeQM+moXuuN3QndEfVr+qRPFKPyXObo/4tq2HaoPRWfPx2RVCa\nZkfZ+C8pAgMBAAECggEAALTyGXgf9r5iqkItfPHiPOewR69BYtx3OKBk3LmvARcs\nxsHJuZlnsj1UjdPBI9Zr4POt0/9qa1NDdS1Dmkcl6q0HSTDfQKVvCjvEbHP92Hva\nHrj4ShtOUU4Y53ww/jNAC9qXFEJdSqEFT3Y5+7XrZ4AuF+ycX9Nd+qSkbili3RnJ\nnC7mVZS5F0umc4V9REFAkg7FbKyuLvFfQ1UjLPZP/yl4p2kWS77hGZOINuwXXFnH\nFFEzZJwwn95kmCVnrPrWE7VO9AvS4G4QkD0FlHZIhNV8A9iqOsWlatanAN8z7jxu\n3GlHkGImbtfbO7fX4NvSvLVzh3hc9ZVMNQSo1Fh/lwKBgQDgyQfLpOHpP4GjSx+k\n1vRF7lYaDDY6N17NBercyp2Y4eqy29iSusICrNGK6FI+uXoi/HS2mUmY3dJphbc3\nS/hyiOqkbX4fmETlvgNT3b8MsMRbc8y8l4Dpa0aaAvCgoRE5cDEwYmIONOQPLjLv\nYvkqj2V+BBrn3tF3QH69zOo+JwKBgQDJ4cLi2N4QBAtWwPVxHDIn1kEmjp2UGy+O\n0qlpcPpHeXf9mDEZCBZMKwhQpv4wxVnsD1UdsJ8gMrN3jGvKDLamO0+BVWcaCSNk\n1ttID77gBi+hi1ruo7RFDNesp7wh3hwoxuB+Zf40Pe+Dv286ApsZsekpRhCdtLlM\nPVBJyjTKLwKBgFsCSXuz6BttsOkSM1+kAAaINqgZJaNwY5uSt8Jo7mHFpiaASDEw\nF/jJS5V39kSbB84+dGqxqVCRDu3WS5XB1ndY49dq1VOpbMuvoN1FvGJA918nhU8d\n7/2Rh2Y3poECdVzSBbhXPOgPlf5ncAvoAIWwxSC+PL6AQkKMBESIQJalAoGAVApJ\naMnC14P3fGvjQOzt7CuC/5wK+SbAC4Kix6QibDKiwsziU3tMXPTlBz4dPwxIvL49\nPpjSBUNV9oRcMsZMGrNCC6MTwoDfXREcQ8laOkQY+/TZK9K2LrCD7/n7lVWy/z6b\nIcMvqWvHE19T3CBNlMq9N1NVg3FCWfyEOdOVWj0CgYATpcwsF2S5AEpjy/yQzTX4\nd7ea278cb00M2Oo+GkRdajr/cpjNUg9bDImRBpx/OX+a6nOp0kVFaI/vv0RXTzua\n8Fq9RJ3vE5j5Swvpk+rovr+f9YGLSi3fbmz1uqKRgXATNckJVyPdRmECdeXAy6J1\n9vJY540BmLrbC7vXFMo/xg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "camfit-crm@cmafit-crm.iam.gserviceaccount.com",
+  "client_id": "108903247519120121935",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/camfit-crm%40cmafit-crm.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

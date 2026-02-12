@@ -33,18 +33,30 @@ export function matchCampingWithCampfit(
   });
 
   campingList.forEach((camping, index) => {
-    const campingName = camping['캠핑장명'] || camping['업체명'] || '';
-    const campingAddress = camping['주소'] || camping['상세주소'] || '';
+    const campingName = (camping['캠핑장명'] || camping['업체명'] || '').trim();
+    const campingAddress = (camping['주소'] || camping['상세주소'] || '').trim();
 
     let isMatched = false;
 
-    // 정확 일치 확인
-    if (campfitNames.includes(campingName) || campfitAddresses.includes(campingAddress)) {
+    if (!campingName && !campingAddress) {
+      matchMap.set(index + 1, false);
+      return;
+    }
+
+    // 정확 일치 확인 (대소문자 무시)
+    const exactNameMatch = campfitNames.some(name => 
+      name.toLowerCase().trim() === campingName.toLowerCase()
+    );
+    const exactAddressMatch = campfitAddresses.some(addr => 
+      addr.toLowerCase().trim() === campingAddress.toLowerCase()
+    );
+
+    if (exactNameMatch || exactAddressMatch) {
       isMatched = true;
-    } else {
+    } else if (campingName || campingAddress) {
       // Fuzzy Matching
-      const nameMatch = nameFuse.search(campingName);
-      const addressMatch = addressFuse.search(campingAddress);
+      const nameMatch = campingName ? nameFuse.search(campingName) : [];
+      const addressMatch = campingAddress ? addressFuse.search(campingAddress) : [];
 
       if (
         (nameMatch.length > 0 && nameMatch[0].score! < 0.3) ||

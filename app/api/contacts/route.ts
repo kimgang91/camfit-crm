@@ -17,7 +17,15 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    await saveContactInfo(body);
+    await saveContactInfo({
+      campingId: body.campingId,
+      rowNumber: body.rowNumber,
+      mdName: body.mdName,
+      result: body.result,
+      rejectionReason: body.rejectionReason,
+      content: body.content,
+      contactDate: body.contactDate,
+    });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error saving contact:', error);

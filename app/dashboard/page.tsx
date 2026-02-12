@@ -179,43 +179,53 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-        <div className="text-xl">로딩 중...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-lg text-slate-600">데이터를 불러오는 중...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            대시보드
-          </h1>
-          <div className="flex gap-2">
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-            >
-              엑셀 다운로드
-            </button>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
-            >
-              홈으로
-            </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+                영업 대시보드
+              </h1>
+              <p className="text-slate-600">MD별 활동 현황 및 통계 분석</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleExport}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all shadow-md flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                엑셀 다운로드
+              </button>
+              <Link
+                href="/"
+                className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all shadow-sm"
+              >
+                홈으로
+              </Link>
+            </div>
           </div>
-        </div>
 
         {/* 기간 선택 */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-slate-200">
           <div className="flex flex-wrap gap-4 items-center">
-            <label className="font-medium">기간 선택:</label>
+            <label className="font-semibold text-slate-700">기간 선택:</label>
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value as 'day' | 'week' | 'month')}
-              className="p-2 border rounded"
+              className="p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
             >
               <option value="day">일</option>
               <option value="week">주</option>
@@ -226,18 +236,18 @@ export default function DashboardPage() {
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="p-2 border rounded"
+                className="p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               />
             )}
-            <div className="text-sm text-gray-600">
+            <div className="ml-auto px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-semibold">
               총 {filteredContacts.length}건
             </div>
           </div>
         </div>
 
         {/* MD별 활동 현황 */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">MD별 활동 현황</h2>
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-slate-200">
+          <h2 className="text-xl font-bold text-slate-900 mb-6">MD별 활동 현황</h2>
           <div className="overflow-x-auto">
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={mdActivity}>
@@ -257,8 +267,8 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* 결과 비율 분석 */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">결과 비율 분석</h2>
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">결과 비율 분석</h2>
             <div className="mb-4">
               {resultRatio.map((item) => (
                 <div key={item.name} className="mb-2">
@@ -297,8 +307,8 @@ export default function DashboardPage() {
           </div>
 
           {/* 거절 사유 분석 */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">거절 사유 분석</h2>
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">거절 사유 분석</h2>
             <div className="mb-4">
               {rejectionReasons.length > 0 ? (
                 rejectionReasons.map((item) => (
@@ -339,35 +349,39 @@ export default function DashboardPage() {
         </div>
 
         {/* 입점전환 MD 순위 */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">입점전환 MD 순위</h2>
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+          <h2 className="text-xl font-bold text-slate-900 mb-6">입점전환 MD 순위</h2>
           {conversionRanking.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-100">
+                <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                   <tr>
-                    <th className="p-3 text-left">순위</th>
-                    <th className="p-3 text-left">MD 이름</th>
-                    <th className="p-3 text-left">입점전환 건수</th>
+                    <th className="p-4 text-left font-semibold">순위</th>
+                    <th className="p-4 text-left font-semibold">MD 이름</th>
+                    <th className="p-4 text-left font-semibold">입점전환 건수</th>
                   </tr>
                 </thead>
                 <tbody>
                   {conversionRanking.map((item) => (
                     <tr
                       key={item.mdName}
-                      className={`border-b ${
-                        item.rank === 1 ? 'bg-yellow-50 font-semibold' : ''
+                      className={`border-b border-slate-200 hover:bg-blue-50 transition-colors ${
+                        item.rank === 1 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 font-semibold' : ''
                       }`}
                     >
-                      <td className="p-3">
+                      <td className="p-4">
                         {item.rank === 1 ? (
-                          <span className="text-yellow-600">🥇 {item.rank}위</span>
+                          <span className="text-yellow-600 font-bold text-lg">🥇 {item.rank}위</span>
                         ) : (
-                          `${item.rank}위`
+                          <span className="text-slate-600">{item.rank}위</span>
                         )}
                       </td>
-                      <td className="p-3">{item.mdName}</td>
-                      <td className="p-3">{item.count}건</td>
+                      <td className="p-4 font-medium text-slate-900">{item.mdName}</td>
+                      <td className="p-4">
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                          {item.count}건
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

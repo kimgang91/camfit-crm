@@ -24,9 +24,10 @@ const CAMPFIT_LIST_SPREADSHEET_ID = '1PHX-Qyk1KrlB8k9r9hEqUckUuQT3PGfu-vJI1R22Xy
 export async function getCampingList() {
   try {
     const sheets = getSheetsClient();
+    // gid=907098998 시트의 데이터 가져오기
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
-      range: 'A:Z', // 전체 데이터 가져오기
+      range: 'A:T', // A열부터 T열까지
     });
 
     const rows = response.data.values;
@@ -34,15 +35,30 @@ export async function getCampingList() {
       return [];
     }
 
-    // 첫 번째 행은 헤더
-    const headers = rows[0] as string[];
-    const data = rows.slice(1).map((row, index) => {
-      const item: any = { id: index + 1 };
-      headers.forEach((header, colIndex) => {
-        item[header] = row[colIndex] || '';
+    // 헤더 찾기 (3번째 행이 헤더인 것으로 보임)
+    let headerRowIndex = 0;
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      if (rows[i] && rows[i].some((cell: string) => cell && (cell.includes('캠핑장명') || cell.includes('지역')))) {
+        headerRowIndex = i;
+        break;
+      }
+    }
+
+    const headers = rows[headerRowIndex] as string[];
+    const data = rows.slice(headerRowIndex + 1)
+      .filter((row) => row && row.some((cell: string) => cell && cell.trim() !== '')) // 빈 행 제거
+      .map((row, index) => {
+        const item: any = { 
+          id: index + 1,
+          rowNumber: headerRowIndex + index + 2 // 실제 스프레드시트 행 번호
+        };
+        headers.forEach((header, colIndex) => {
+          if (header && header.trim() !== '') {
+            item[header.trim()] = row[colIndex] || '';
+          }
+        });
+        return item;
       });
-      return item;
-    });
 
     return data;
   } catch (error) {
@@ -150,9 +166,10 @@ async function ensureMDContactsSheet() {
   }
 }
 
-// MD 컨택 정보 저장 (새로운 시트에 저장)
+// MD 컨택 정보 저장 (원본 시트의 컨택MD, 최근컨택일, 내용 컬럼 업데이트)
 export async function saveContactInfo(contactData: {
   campingId: number;
+  rowNumber?: number;
   mdName: string;
   result: string;
   rejectionReason?: string;
@@ -162,12 +179,10 @@ export async function saveContactInfo(contactData: {
   try {
     const sheets = getSheetsClient();
     
-    // 시트가 없으면 생성
+    // MD_Contacts 시트에도 저장 (히스토리용)
     await ensureMDContactsSheet();
-    
-    // 'MD_Contacts' 시트에 데이터 추가
-    const range = 'MD_Contacts!A:F';
-    const values = [[
+    const historyRange = 'MD_Contacts!A:F';
+    const historyValues = [[
       contactData.campingId,
       contactData.mdName,
       contactData.result,
@@ -178,13 +193,35 @@ export async function saveContactInfo(contactData: {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
-      range,
+      range: historyRange,
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
-        values,
+        values: historyValues,
       },
     });
+
+    // 원본 시트의 해당 행 업데이트 (rowNumber가 있는 경우)
+    if (contactData.rowNumber) {
+      // 컨택MD, 최근컨택일, 내용 컬럼 업데이트
+      // 컬럼 위치: H(컨택MD), J(최근컨택일), K(내용)
+      const updateRange = `H${contactData.rowNumber}:K${contactData.rowNumber}`;
+      const updateValues = [[
+        contactData.mdName,
+        contactData.contactDate,
+        contactData.content,
+        contactData.result, // 내용 옆에 결과도 저장
+      ]];
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
+        range: updateRange,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: updateValues,
+        },
+      });
+    }
   } catch (error) {
     console.error('Error saving contact info:', error);
     throw error;
