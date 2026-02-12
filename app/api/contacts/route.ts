@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       content: body.content,
       contactDate: body.contactDate,
       followUpDate: body.followUpDate,
+      입점플랜: body.입점플랜,
       // 공란 데이터 보완
       연락처: body.연락처,
       운영상태: body.운영상태,

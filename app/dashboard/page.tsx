@@ -24,6 +24,7 @@ interface ContactInfo {
   rejectionReason?: string;
   content: string;
   contactDate: string;
+  입점플랜?: string; // 입점 플랜명
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
@@ -107,9 +108,11 @@ export default function DashboardPage() {
         activityMap.set(contact.mdName, {
           total: 0,
           입점전환: 0,
-          거절: 0,
-          미응답: 0,
-          재연락: 0,
+          입점신규: 0,
+          '거절(WHY)': 0,
+          부재: 0,
+          '검토(재연락)': 0,
+          '기타(내용입력)': 0,
         });
       }
 
@@ -145,7 +148,7 @@ export default function DashboardPage() {
 
   // 거절 사유 분석
   const rejectionReasons = useMemo(() => {
-    const rejected = filteredContacts.filter((c) => c.result === '거절');
+    const rejected = filteredContacts.filter((c) => c.result === '거절(WHY)');
     const reasonMap = new Map<string, number>();
 
     rejected.forEach((contact) => {
@@ -166,7 +169,7 @@ export default function DashboardPage() {
     const mdMap = new Map<string, number>();
 
     filteredContacts
-      .filter((c) => c.result === '입점전환')
+      .filter((c) => c.result === '입점(신규)')
       .forEach((contact) => {
         mdMap.set(contact.mdName, (mdMap.get(contact.mdName) || 0) + 1);
       });
@@ -359,7 +362,7 @@ export default function DashboardPage() {
                   <tr>
                     <th className="p-4 text-left font-semibold">순위</th>
                     <th className="p-4 text-left font-semibold">MD 이름</th>
-                    <th className="p-4 text-left font-semibold">입점전환 건수</th>
+                    <th className="p-4 text-left font-semibold">입점(신규) 건수</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -389,7 +392,7 @@ export default function DashboardPage() {
               </table>
             </div>
           ) : (
-            <p className="text-gray-500">입점전환 데이터가 없습니다.</p>
+            <p className="text-gray-500">입점(신규) 데이터가 없습니다.</p>
           )}
         </div>
       </div>

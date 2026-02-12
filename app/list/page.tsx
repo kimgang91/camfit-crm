@@ -39,6 +39,7 @@ interface ContactInfo {
   lastContactDate?: string; // 최종 컨택일
   md입력예약시스템1?: string; // MD가 입력한 예약시스템1
   md입력예약시스템2?: string; // MD가 입력한 예약시스템2
+  입점플랜?: string; // 입점 플랜명 (쉼표로 구분된 문자열)
 }
 
 const RESULT_OPTIONS = ['부재', '검토(재연락)', '입점(신규)', '거절(WHY)', '기타(내용입력)'];
@@ -73,6 +74,7 @@ export default function ListPage() {
     rejectionReason: '',
     content: '',
     followUpDate: '', // 재연락 예정일
+    입점플랜: [] as string[], // 입점 플랜명 (중복 선택 가능)
     // 공란 데이터 보완
     연락처: '',
     운영상태: '',
@@ -80,6 +82,14 @@ export default function ListPage() {
     예약시스템1: '',
     예약시스템2: '',
   });
+
+  // 컨택 히스토리 모달
+  const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
+  const [contactHistory, setContactHistory] = useState<ContactInfo[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const HISTORY_PER_PAGE = 5;
+
+  const PLAN_OPTIONS = ['안심취소', '캠핑케어', '이지캠핑', '파트너', '오토플랜', '베이직'];
 
   useEffect(() => {
     fetchData();
@@ -284,12 +294,14 @@ export default function ListPage() {
           content: contactForm.content,
           followUpDate: contactForm.followUpDate,
           contactDate: format(new Date(), 'yyyy-MM-dd'),
-          // 공란 데이터 보완 (기존 값이 없을 때만 업데이트)
-          연락처: !item?.['연락처'] ? contactForm.연락처 : undefined,
-          운영상태: !item?.['운영상태'] ? contactForm.운영상태 : undefined,
-          유형: !item?.['유형'] ? contactForm.유형 : undefined,
-          예약시스템1: !item?.['예약시스템1'] ? contactForm.예약시스템1 : undefined,
-          예약시스템2: !item?.['예약시스템2'] ? contactForm.예약시스템2 : undefined,
+          // 공란 데이터 보완 (입력된 값이 있으면 업데이트)
+          연락처: contactForm.연락처 || undefined,
+          운영상태: contactForm.운영상태 || undefined,
+          유형: contactForm.유형 || undefined,
+          예약시스템1: contactForm.예약시스템1 || undefined,
+          예약시스템2: contactForm.예약시스템2 || undefined,
+          // 입점 플랜명
+          입점플랜: contactForm.입점플랜.length > 0 ? contactForm.입점플랜.join(', ') : undefined,
         }),
       });
 
@@ -299,6 +311,7 @@ export default function ListPage() {
         rejectionReason: '',
         content: '',
         followUpDate: '',
+        입점플랜: [],
         연락처: '',
         운영상태: '',
         유형: '',
@@ -455,6 +468,7 @@ export default function ListPage() {
                             rejectionReason: c.rejectionReason || '',
                             content: c.content,
                             followUpDate: c.followUpDate || '',
+                            입점플랜: c.입점플랜 ? c.입점플랜.split(', ').filter(Boolean) : [],
                             연락처: item?.['연락처'] || '',
                             운영상태: item?.['운영상태'] || '',
                             유형: item?.['유형'] || '',
@@ -749,6 +763,7 @@ export default function ListPage() {
                                   rejectionReason: contact.rejectionReason || '',
                                   content: contact.content,
                                   followUpDate: contact.followUpDate || '',
+                                  입점플랜: contact.입점플랜 ? contact.입점플랜.split(', ').filter(Boolean) : [],
                                   연락처: item['연락처'] || '',
                                   운영상태: item['운영상태'] || '',
                                   유형: item['유형'] || '',
@@ -762,6 +777,7 @@ export default function ListPage() {
                                   rejectionReason: '',
                                   content: '',
                                   followUpDate: '',
+                                  입점플랜: [],
                                   연락처: item['연락처'] || '',
                                   운영상태: item['운영상태'] || '',
                                   유형: item['유형'] || '',
@@ -969,6 +985,42 @@ export default function ListPage() {
                       className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                       required
                     />
+                  </div>
+                )}
+
+                {contactForm.result === '입점(신규)' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-slate-700">
+                      입점 플랜명 <span className="text-red-500">*</span>
+                    </label>
+                    <div className="space-y-2">
+                      {PLAN_OPTIONS.map((plan) => (
+                        <label key={plan} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={contactForm.입점플랜.includes(plan)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setContactForm({
+                                  ...contactForm,
+                                  입점플랜: [...contactForm.입점플랜, plan],
+                                });
+                              } else {
+                                setContactForm({
+                                  ...contactForm,
+                                  입점플랜: contactForm.입점플랜.filter((p) => p !== plan),
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-slate-700">{plan}</span>
+                        </label>
+                      ))}
+                      {contactForm.입점플랜.length === 0 && (
+                        <p className="text-xs text-red-500">최소 1개 이상 선택해주세요.</p>
+                      )}
+                    </div>
                   </div>
                 )}
 

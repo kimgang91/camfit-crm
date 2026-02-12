@@ -241,13 +241,13 @@ async function ensureMDContactsSheet() {
         },
       });
 
-      // 헤더 추가 (재연락 예정일, MD 입력 예약시스템 포함)
+      // 헤더 추가 (재연락 예정일, MD 입력 예약시스템, 입점플랜 포함)
       await sheets.spreadsheets.values.update({
         spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
-        range: 'MD_Contacts!A1:J1',
+        range: 'MD_Contacts!A1:K1',
         valueInputOption: 'RAW',
         requestBody: {
-          values: [['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate', 'md입력예약시스템1', 'md입력예약시스템2']],
+          values: [['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate', 'md입력예약시스템1', 'md입력예약시스템2', '입점플랜']],
         },
       });
     }
@@ -267,6 +267,7 @@ export async function saveContactInfo(contactData: {
   content: string;
   contactDate: string;
   followUpDate?: string; // 재연락 예정일
+  입점플랜?: string; // 입점 플랜명
   // 공란 데이터 보완
   연락처?: string;
   운영상태?: string;
@@ -279,7 +280,7 @@ export async function saveContactInfo(contactData: {
     
     // MD_Contacts 시트에도 저장 (히스토리용)
     await ensureMDContactsSheet();
-    const historyRange = 'MD_Contacts!A:J';
+    const historyRange = 'MD_Contacts!A:K';
     const historyValues = [[
       contactData.campingId,
       contactData.mdName,
@@ -291,6 +292,7 @@ export async function saveContactInfo(contactData: {
       contactData.contactDate, // 최종 컨택일
       contactData.예약시스템1 || '', // MD가 입력한 예약시스템1
       contactData.예약시스템2 || '', // MD가 입력한 예약시스템2
+      contactData.입점플랜 || '', // 입점 플랜명
     ]];
 
     await sheets.spreadsheets.values.append({
@@ -384,7 +386,7 @@ export async function getContactInfo() {
       return [];
     }
 
-    const headers = ['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate', 'md입력예약시스템1', 'md입력예약시스템2'];
+    const headers = ['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate', 'md입력예약시스템1', 'md입력예약시스템2', '입점플랜'];
     const data = rows.slice(1).map((row) => {
       const item: any = {};
       headers.forEach((header, colIndex) => {
