@@ -75,13 +75,17 @@ export default function ListPage() {
     content: '',
     followUpDate: '', // 재연락 예정일
     입점플랜: [] as string[], // 입점 플랜명 (중복 선택 가능)
-    // 공란 데이터 보완
+    // 데이터 보완 (별도 섹션)
     연락처: '',
     운영상태: '',
     유형: '',
     예약시스템1: '',
     예약시스템2: '',
   });
+
+  const OPERATION_STATUS_OPTIONS = ['운영중', '폐업', '미확인', '무관업체'];
+  const TYPE_OPTIONS = ['오토캠핑', '글램핑', '카라반', '펜션', '캠프닉', '기타'];
+  const RESERVATION_SYSTEM_OPTIONS = ['땡큐캠핑', '캠핑톡', '네이버', '그래가', '자체예약', '떠나요', '야놀자', '여기어때', '온다', '기타'];
 
   // 컨택 히스토리 모달
   const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
@@ -1035,81 +1039,83 @@ export default function ListPage() {
                   />
                 </div>
 
-                {/* 공란 데이터 보완 입력 */}
-                {(() => {
-                  const item = campingList.find(c => c.id === editingId);
-                  const hasEmptyFields = !item?.['연락처'] || !item?.['운영상태'] || !item?.['유형'] || !item?.['예약시스템1'];
-                  
-                  if (!hasEmptyFields) return null;
-
-                  return (
-                    <div className="border-t border-slate-200 pt-4 mt-4">
-                      <h3 className="text-sm font-semibold text-slate-700 mb-3">공란 데이터 보완 (선택사항)</h3>
-                      <div className="space-y-3">
-                        {!item?.['연락처'] && (
-                          <div>
-                            <label className="block text-xs font-medium mb-1 text-slate-600">연락처</label>
-                            <input
-                              type="text"
-                              value={contactForm.연락처}
-                              onChange={(e) => setContactForm({ ...contactForm, 연락처: e.target.value })}
-                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
-                              placeholder="연락처 입력"
-                            />
-                          </div>
-                        )}
-                        {!item?.['운영상태'] && (
-                          <div>
-                            <label className="block text-xs font-medium mb-1 text-slate-600">운영상태</label>
-                            <input
-                              type="text"
-                              value={contactForm.운영상태}
-                              onChange={(e) => setContactForm({ ...contactForm, 운영상태: e.target.value })}
-                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
-                              placeholder="운영상태 입력 (예: 운영중)"
-                            />
-                          </div>
-                        )}
-                        {!item?.['유형'] && (
-                          <div>
-                            <label className="block text-xs font-medium mb-1 text-slate-600">유형</label>
-                            <input
-                              type="text"
-                              value={contactForm.유형}
-                              onChange={(e) => setContactForm({ ...contactForm, 유형: e.target.value })}
-                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
-                              placeholder="유형 입력 (예: 오토캠핑, 글램핑)"
-                            />
-                          </div>
-                        )}
-                        {!item?.['예약시스템1'] && (
-                          <div>
-                            <label className="block text-xs font-medium mb-1 text-slate-600">예약시스템1</label>
-                            <input
-                              type="text"
-                              value={contactForm.예약시스템1}
-                              onChange={(e) => setContactForm({ ...contactForm, 예약시스템1: e.target.value })}
-                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
-                              placeholder="예약시스템 입력"
-                            />
-                          </div>
-                        )}
-                        {!item?.['예약시스템2'] && (
-                          <div>
-                            <label className="block text-xs font-medium mb-1 text-slate-600">예약시스템2</label>
-                            <input
-                              type="text"
-                              value={contactForm.예약시스템2}
-                              onChange={(e) => setContactForm({ ...contactForm, 예약시스템2: e.target.value })}
-                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
-                              placeholder="예약시스템 입력"
-                            />
-                          </div>
-                        )}
-                      </div>
+                {/* 데이터 보완 섹션 */}
+                <div className="border-t border-slate-200 pt-4 mt-4">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">데이터 보완</h3>
+                  <p className="text-xs text-slate-500 mb-3">컨택 과정에서 확보한 최신 정보를 입력하세요.</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-slate-600">연락처</label>
+                      <input
+                        type="text"
+                        value={contactForm.연락처}
+                        onChange={(e) => setContactForm({ ...contactForm, 연락처: e.target.value })}
+                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                        placeholder="연락처 입력"
+                      />
                     </div>
-                  );
-                })()}
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-slate-600">운영상태</label>
+                      <select
+                        value={contactForm.운영상태}
+                        onChange={(e) => setContactForm({ ...contactForm, 운영상태: e.target.value })}
+                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                      >
+                        <option value="">선택하세요</option>
+                        {OPERATION_STATUS_OPTIONS.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-slate-600">유형</label>
+                      <select
+                        value={contactForm.유형}
+                        onChange={(e) => setContactForm({ ...contactForm, 유형: e.target.value })}
+                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                      >
+                        <option value="">선택하세요</option>
+                        {TYPE_OPTIONS.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-slate-600">예약시스템1</label>
+                      <select
+                        value={contactForm.예약시스템1}
+                        onChange={(e) => setContactForm({ ...contactForm, 예약시스템1: e.target.value })}
+                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                      >
+                        <option value="">선택하세요</option>
+                        {RESERVATION_SYSTEM_OPTIONS.map((system) => (
+                          <option key={system} value={system}>
+                            {system}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-slate-600">예약시스템2</label>
+                      <select
+                        value={contactForm.예약시스템2}
+                        onChange={(e) => setContactForm({ ...contactForm, 예약시스템2: e.target.value })}
+                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                      >
+                        <option value="">선택하세요</option>
+                        {RESERVATION_SYSTEM_OPTIONS.map((system) => (
+                          <option key={system} value={system}>
+                            {system}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-6 flex gap-2">

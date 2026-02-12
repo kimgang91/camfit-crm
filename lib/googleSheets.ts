@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { format } from 'date-fns';
 
 // Google Sheets API 클라이언트 초기화
 function getSheetsClient() {
@@ -309,52 +310,116 @@ export async function saveContactInfo(contactData: {
     if (contactData.rowNumber) {
       const updates: Array<{ range: string; values: string[][] }> = [];
       
-      // 컨택MD, 최근컨택일, 내용 컬럼 업데이트 (H, J, K)
+      // 컨택MD, 최근컨택일, 내용 컬럼 업데이트
+      // 주의: 각 컬럼을 개별적으로 업데이트하여 잘못된 매핑 방지
+      // H: 컨택MD
       updates.push({
-        range: `H${contactData.rowNumber}:K${contactData.rowNumber}`,
-        values: [[
-          contactData.mdName,
-          contactData.contactDate,
-          contactData.content,
-          contactData.result,
-        ]],
+        range: `H${contactData.rowNumber}`,
+        values: [[contactData.mdName]],
+      });
+      
+      // J: 최근컨택일 (I 컬럼은 건드리지 않음)
+      updates.push({
+        range: `J${contactData.rowNumber}`,
+        values: [[contactData.contactDate]],
+      });
+      
+      // K: 내용
+      updates.push({
+        range: `K${contactData.rowNumber}`,
+        values: [[contactData.content]],
       });
 
-      // 공란 데이터 보완 (연락처, 운영상태, 유형, 예약시스템1, 예약시스템2)
-      // 컬럼 위치: F(연락처), G(운영상태), L(유형), M(예약시스템1), N(예약시스템2)
-      // 입력된 값이 있으면 항상 업데이트 (공란 보완 목적)
+      // 데이터 보완: 각 컬럼을 개별적으로 정확히 업데이트
+      // F: 연락처 (캠핑장명과 절대 혼동되지 않도록 개별 업데이트)
       if (contactData.연락처 !== undefined && contactData.연락처 !== '') {
         updates.push({
-          range: `F${contactData.rowNumber}`,
+          range: `F${contactData.rowNumber}`, // F 컬럼만 업데이트
           values: [[contactData.연락처]],
         });
       }
+      
+      // G: 운영상태
       if (contactData.운영상태 !== undefined && contactData.운영상태 !== '') {
         updates.push({
-          range: `G${contactData.rowNumber}`,
+          range: `G${contactData.rowNumber}`, // G 컬럼만 업데이트
           values: [[contactData.운영상태]],
         });
       }
+      
+      // L: 유형
       if (contactData.유형 !== undefined && contactData.유형 !== '') {
         updates.push({
-          range: `L${contactData.rowNumber}`,
+          range: `L${contactData.rowNumber}`, // L 컬럼만 업데이트
           values: [[contactData.유형]],
         });
       }
+      
+      // M: 예약시스템1
       if (contactData.예약시스템1 !== undefined && contactData.예약시스템1 !== '') {
         updates.push({
-          range: `M${contactData.rowNumber}`,
+          range: `M${contactData.rowNumber}`, // M 컬럼만 업데이트
           values: [[contactData.예약시스템1]],
         });
       }
+      
+      // N: 예약시스템2
       if (contactData.예약시스템2 !== undefined && contactData.예약시스템2 !== '') {
         updates.push({
-          range: `N${contactData.rowNumber}`,
+          range: `N${contactData.rowNumber}`, // N 컬럼만 업데이트
           values: [[contactData.예약시스템2]],
         });
       }
 
-      // 배치 업데이트
+      // 입점(신규) 선택 시 캠핏 입점 리스트에 자동 추가
+      if (contactData.result === '입점(신규)') {
+        try {
+          // 캠핑장 정보 가져오기
+          const campingItem = await getCampingList();
+          const targetItem = campingItem.find((item: any) => item.rowNumber === contactData.rowNumber);
+          
+          if (targetItem) {
+            // 캠핏 입점 리스트 시트에 추가
+            const spreadsheet = await sheets.spreadsheets.get({
+              spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
+            });
+            
+            // 캠핏 입점 리스트 시트 찾기 (gid=235517488)
+            const campfitSheet = spreadsheet.data.sheets?.find(
+              (sheet) => sheet.properties?.sheetId === parseInt(CAMPFIT_LIST_SHEET_ID)
+            );
+            
+            const campfitSheetName = campfitSheet?.properties?.title || 'Sheet1';
+            
+            // 캠핏 입점 리스트에 추가할 데이터
+            const newEntry = [
+              targetItem['캠핑장명'] || '',
+              targetItem['주소'] || '',
+              targetItem['연락처'] || contactData.연락처 || '',
+              format(new Date(), 'yyyy-MM-dd'), // 입점일
+              contactData.입점플랜 || '', // 입점 플랜명
+            ];
+            
+            // 캠핏 입점 리스트에 추가
+            await sheets.spreadsheets.values.append({
+              spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
+              range: `${campfitSheetName}!A:Z`,
+              valueInputOption: 'RAW',
+              insertDataOption: 'INSERT_ROWS',
+              requestBody: {
+                values: [newEntry],
+              },
+            });
+            
+            console.log(`입점(신규): ${targetItem['캠핑장명']}이(가) 캠핏 입점 리스트에 추가되었습니다.`);
+          }
+        } catch (error) {
+          console.error('입점 리스트 추가 중 오류:', error);
+          // 입점 리스트 추가 실패해도 컨택 정보는 저장되도록 계속 진행
+        }
+      }
+
+      // 배치 업데이트 (각 컬럼을 개별적으로 업데이트하여 정확성 보장)
       for (const update of updates) {
         await sheets.spreadsheets.values.update({
           spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
