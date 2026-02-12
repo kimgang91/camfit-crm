@@ -301,7 +301,7 @@ export default function ListPage() {
           contactDate: format(new Date(), 'yyyy-MM-dd'),
          입점플랜: contactForm.입점플랜,
           // 공란 데이터 보완 (입력된 값이 있으면 업데이트)
-          캠핑장명: contactForm.캠핑장명, || undefined,
+          캠핑장명: contactForm.캠핑장명 || undefined,
           연락처: contactForm.연락처 || undefined,
           운영상태: contactForm.운영상태 || undefined,
           유형: contactForm.유형 || undefined,
