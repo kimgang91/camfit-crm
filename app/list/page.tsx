@@ -76,6 +76,7 @@ export default function ListPage() {
     followUpDate: '', // 재연락 예정일
     입점플랜: [] as string[], // 입점 플랜명 (중복 선택 가능)
     // 데이터 보완 (별도 섹션)
+    캠핑장명: '',
     연락처: '',
     운영상태: '',
     유형: '',
@@ -298,7 +299,9 @@ export default function ListPage() {
           content: contactForm.content,
           followUpDate: contactForm.followUpDate,
           contactDate: format(new Date(), 'yyyy-MM-dd'),
+         입점플랜: contactForm.입점플랜,
           // 공란 데이터 보완 (입력된 값이 있으면 업데이트)
+          캠핑장명: contactForm.캠핑장명, || undefined,
           연락처: contactForm.연락처 || undefined,
           운영상태: contactForm.운영상태 || undefined,
           유형: contactForm.유형 || undefined,
@@ -902,20 +905,23 @@ export default function ListPage() {
                 <h2 className="text-xl font-bold text-slate-900">MD 컨택 정보 입력</h2>
                 <button
                   onClick={() => {
-                    setEditingId(null);
-                    setContactForm({
-                      mdName: '',
-                      result: '',
-                      rejectionReason: '',
-                      content: '',
-                      followUpDate: '',
-                      연락처: '',
-                      운영상태: '',
-                      유형: '',
-                      예약시스템1: '',
-                      예약시스템2: '',
-                    });
-                  }}
+  setSelectedItem(item);
+  setContactForm({
+    mdName: '',
+    result: '',
+    rejectionReason: '',
+    content: '',
+    followUpDate: '',
+    입점플랜: [] ,
+	캠핑장명: item['캠핑장명'] || '',
+   	연락처: item['연락처'] || '',
+    	운영상태: item['운영상태'] || '',
+    	유형: item['유형'] || '',
+   	 예약시스템1: item['예약시스템1'] || '',
+    	예약시스템2: item['예약시스템2'] || '',
+  	});
+ 	 setIsContactModalOpen(true);
+	}}
                   className="text-slate-400 hover:text-slate-600"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1040,6 +1046,28 @@ export default function ListPage() {
                 </div>
 
                 {/* 데이터 보완 섹션 */}
+<div className="border-t border-slate-200 pt-4 mt-4">
+  <h3 className="text-sm font-semibold text-slate-700 mb-2">데이터 보완</h3>
+
+  {/*  캠핑장명 입력 필드 */}
+  <div className="mb-3">
+    <label className="block text-xs font-medium mb-1 text-slate-600">
+      캠핑장명
+    </label>
+    <input
+      type="text"
+      value={contactForm.캠핑장명}
+      onChange={(e) =>
+        setContactForm({ ...contactForm, 캠핑장명: e.target.value })
+      }
+      className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+      placeholder="캠핑장명을 입력하세요"
+    />
+  </div>
+
+  {/* 기존 연락처 / 운영상태 / 유형 / 예약시스템1 / 예약시스템2 입력들 계속 */}
+  {/* ... 기존 코드 유지 ... */}
+</div>
                 <div className="border-t border-slate-200 pt-4 mt-4">
                   <h3 className="text-sm font-semibold text-slate-700 mb-2">데이터 보완</h3>
                   <p className="text-xs text-slate-500 mb-3">컨택 과정에서 확보한 최신 정보를 입력하세요.</p>
@@ -1128,6 +1156,7 @@ export default function ListPage() {
                       rejectionReason: '',
                       content: '',
                       followUpDate: '',
+		      캠핑장명:'' ,
                       연락처: '',
                       운영상태: '',
                       유형: '',
