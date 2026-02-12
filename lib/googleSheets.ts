@@ -24,42 +24,97 @@ const CAMPFIT_LIST_SPREADSHEET_ID = '1PHX-Qyk1KrlB8k9r9hEqUckUuQT3PGfu-vJI1R22Xy
 export async function getCampingList() {
   try {
     const sheets = getSheetsClient();
-    // gid=907098998 시트의 데이터 가져오기
+    
+    // 시트 목록 확인하여 올바른 시트 찾기
+    const spreadsheet = await sheets.spreadsheets.get({
+      spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
+    });
+    
+    // 모든 시트 목록 출력 (디버깅용)
+    const allSheets = spreadsheet.data.sheets || [];
+    console.log('Available sheets:', allSheets.map(s => ({
+      title: s.properties?.title,
+      sheetId: s.properties?.sheetId,
+      index: s.properties?.index
+    })));
+    
+    // gid는 URL 파라미터이지만, 실제로는 첫 번째 시트를 사용하거나
+    // 시트 이름을 알고 있다면 직접 지정
+    // 일단 첫 번째 시트 사용 (또는 시트 이름이 있다면 지정)
+    const targetSheet = allSheets[0];
+    const sheetName = targetSheet?.properties?.title || 'Sheet1';
+    console.log(`Using sheet: ${sheetName}`);
+    
+    // 시트의 데이터 가져오기
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
-      range: 'A:T', // A열부터 T열까지
+      range: `${sheetName}!A:T`, // 시트 이름 명시
     });
 
     const rows = response.data.values;
     if (!rows || rows.length === 0) {
+      console.log('No rows found in spreadsheet');
       return [];
     }
 
-    // 헤더 찾기 (3번째 행이 헤더인 것으로 보임)
-    let headerRowIndex = 0;
+    console.log(`Total rows fetched: ${rows.length}`);
+
+    // 헤더 찾기 (3번째 행이 헤더인 것으로 보임, 인덱스 2)
+    let headerRowIndex = 2; // 기본값: 3번째 행 (인덱스 2)
+    
+    // 헤더 확인: '캠핑장명' 또는 '구 분'이 포함된 행 찾기
     for (let i = 0; i < Math.min(5, rows.length); i++) {
-      if (rows[i] && rows[i].some((cell: string) => cell && (cell.includes('캠핑장명') || cell.includes('지역')))) {
-        headerRowIndex = i;
-        break;
+      if (rows[i] && Array.isArray(rows[i])) {
+        const rowText = rows[i].join(' ');
+        if (rowText.includes('캠핑장명') || rowText.includes('구 분')) {
+          headerRowIndex = i;
+          console.log(`Header found at row index: ${headerRowIndex}`);
+          break;
+        }
       }
     }
 
+    if (!rows[headerRowIndex]) {
+      console.error('Header row not found');
+      return [];
+    }
+
     const headers = rows[headerRowIndex] as string[];
-    const data = rows.slice(headerRowIndex + 1)
-      .filter((row) => row && row.some((cell: string) => cell && cell.trim() !== '')) // 빈 행 제거
+    console.log(`Headers: ${headers.join(', ')}`);
+
+    // 헤더 다음 행부터 데이터 시작 (4번째 행은 빈 행일 수 있으므로 필터링)
+    const dataRows = rows.slice(headerRowIndex + 1);
+    console.log(`Data rows (after header): ${dataRows.length}`);
+
+    const data = dataRows
       .map((row, index) => {
+        // 행이 비어있는지 확인 (모든 셀이 비어있거나 공백만 있는 경우)
+        const hasData = row && Array.isArray(row) && row.some((cell: any) => {
+          const cellValue = String(cell || '').trim();
+          return cellValue !== '' && cellValue !== 'undefined' && cellValue !== 'null';
+        });
+
+        if (!hasData) {
+          return null;
+        }
+
         const item: any = { 
           id: index + 1,
           rowNumber: headerRowIndex + index + 2 // 실제 스프레드시트 행 번호
         };
+        
         headers.forEach((header, colIndex) => {
           if (header && header.trim() !== '') {
-            item[header.trim()] = row[colIndex] || '';
+            const cellValue = row[colIndex];
+            item[header.trim()] = cellValue !== undefined && cellValue !== null ? String(cellValue).trim() : '';
           }
         });
+        
         return item;
-      });
+      })
+      .filter((item) => item !== null); // null 제거
 
+    console.log(`Processed data items: ${data.length}`);
     return data;
   } catch (error) {
     console.error('Error fetching camping list:', error);

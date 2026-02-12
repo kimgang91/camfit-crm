@@ -10,6 +10,9 @@ export async function GET() {
       getCampfitList(),
     ]);
 
+    console.log(`Camping list count: ${campingList.length}`);
+    console.log(`Campfit list count: ${campfitList.length}`);
+
     // 입점 매칭
     const matchMap = matchCampingWithCampfit(campingList, campfitList);
 
@@ -19,11 +22,18 @@ export async function GET() {
       isCampfitMember: matchMap.get(index + 1) || false,
     }));
 
-    return NextResponse.json({ data: campingListWithMatch });
-  } catch (error) {
+    return NextResponse.json({ 
+      data: campingListWithMatch,
+      count: campingListWithMatch.length 
+    });
+  } catch (error: any) {
     console.error('Error fetching camping list:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch camping list' },
+      { 
+        error: 'Failed to fetch camping list',
+        message: error.message || 'Unknown error',
+        details: error.toString()
+      },
       { status: 500 }
     );
   }
