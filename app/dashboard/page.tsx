@@ -217,6 +217,7 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+        </div>
 
         {/* 기간 선택 */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-slate-200">
