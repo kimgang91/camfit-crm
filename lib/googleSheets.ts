@@ -15,10 +15,10 @@ function getSheetsClient() {
 
 // 캠핑장 DB 스프레드시트 ID
 const CAMPING_DB_SPREADSHEET_ID = '1_laE9Yxj-tajY23k36z3Bg2A_Mds8_V2A81DHnrUO68';
-const CAMPING_DB_SHEET_ID = '907098998'; // gid
+const CAMPING_DB_SHEET_ID = '907098998'; // gid (시트 ID)
 
-// 캠핏 입점 리스트 스프레드시트 ID
-const CAMPFIT_LIST_SPREADSHEET_ID = '1PHX-Qyk1KrlB8k9r9hEqUckUuQT3PGfu-vJI1R22XyA';
+// 캠핏 입점 리스트 (같은 스프레드시트 내 다른 시트)
+const CAMPFIT_LIST_SHEET_ID = '235517488'; // gid (시트 ID)
 
 // 캠핑장 리스트 가져오기
 export async function getCampingList() {
@@ -122,29 +122,65 @@ export async function getCampingList() {
   }
 }
 
-// 캠핏 입점 리스트 가져오기
+// 캠핏 입점 리스트 가져오기 (같은 스프레드시트 내 다른 시트)
 export async function getCampfitList() {
   try {
     const sheets = getSheetsClient();
+    
+    // 시트 목록 확인하여 올바른 시트 찾기
+    const spreadsheet = await sheets.spreadsheets.get({
+      spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
+    });
+    
+    // gid=235517488에 해당하는 시트 찾기
+    const targetSheet = spreadsheet.data.sheets?.find(
+      (sheet) => sheet.properties?.sheetId === parseInt(CAMPFIT_LIST_SHEET_ID)
+    );
+    
+    const sheetName = targetSheet?.properties?.title || 'Sheet1';
+    console.log(`Using Campfit sheet: ${sheetName} (gid: ${CAMPFIT_LIST_SHEET_ID})`);
+    
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: CAMPFIT_LIST_SPREADSHEET_ID,
-      range: 'A:Z',
+      spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
+      range: `${sheetName}!A:Z`,
     });
 
     const rows = response.data.values;
     if (!rows || rows.length === 0) {
+      console.log('No rows found in campfit list');
       return [];
     }
 
-    const headers = rows[0] as string[];
-    const data = rows.slice(1).map((row) => {
-      const item: any = {};
-      headers.forEach((header, colIndex) => {
-        item[header] = row[colIndex] || '';
-      });
-      return item;
-    });
+    // 헤더 찾기
+    let headerRowIndex = 0;
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      if (rows[i] && Array.isArray(rows[i])) {
+        const rowText = rows[i].join(' ');
+        if (rowText.includes('캠핑장명') || rowText.includes('업체명') || rowText.includes('주소')) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+    }
 
+    const headers = rows[headerRowIndex] as string[];
+    const data = rows.slice(headerRowIndex + 1)
+      .filter((row) => row && Array.isArray(row) && row.some((cell: any) => {
+        const cellValue = String(cell || '').trim();
+        return cellValue !== '' && cellValue !== 'undefined' && cellValue !== 'null';
+      }))
+      .map((row) => {
+        const item: any = {};
+        headers.forEach((header, colIndex) => {
+          if (header && header.trim() !== '') {
+            const cellValue = row[colIndex];
+            item[header.trim()] = cellValue !== undefined && cellValue !== null ? String(cellValue).trim() : '';
+          }
+        });
+        return item;
+      });
+
+    console.log(`Campfit list items: ${data.length}`);
     return data;
   } catch (error) {
     console.error('Error fetching campfit list:', error);
@@ -205,13 +241,13 @@ async function ensureMDContactsSheet() {
         },
       });
 
-      // 헤더 추가
+      // 헤더 추가 (재연락 예정일 포함)
       await sheets.spreadsheets.values.update({
         spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
-        range: 'MD_Contacts!A1:F1',
+        range: 'MD_Contacts!A1:H1',
         valueInputOption: 'RAW',
         requestBody: {
-          values: [['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate']],
+          values: [['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate']],
         },
       });
     }
@@ -230,13 +266,20 @@ export async function saveContactInfo(contactData: {
   rejectionReason?: string;
   content: string;
   contactDate: string;
+  followUpDate?: string; // 재연락 예정일
+  // 공란 데이터 보완
+  연락처?: string;
+  운영상태?: string;
+  유형?: string;
+  예약시스템1?: string;
+  예약시스템2?: string;
 }) {
   try {
     const sheets = getSheetsClient();
     
     // MD_Contacts 시트에도 저장 (히스토리용)
     await ensureMDContactsSheet();
-    const historyRange = 'MD_Contacts!A:F';
+    const historyRange = 'MD_Contacts!A:H';
     const historyValues = [[
       contactData.campingId,
       contactData.mdName,
@@ -244,6 +287,8 @@ export async function saveContactInfo(contactData: {
       contactData.rejectionReason || '',
       contactData.content,
       contactData.contactDate,
+      contactData.followUpDate || '',
+      contactData.contactDate, // 최종 컨택일
     ]];
 
     await sheets.spreadsheets.values.append({
@@ -258,24 +303,63 @@ export async function saveContactInfo(contactData: {
 
     // 원본 시트의 해당 행 업데이트 (rowNumber가 있는 경우)
     if (contactData.rowNumber) {
-      // 컨택MD, 최근컨택일, 내용 컬럼 업데이트
-      // 컬럼 위치: H(컨택MD), J(최근컨택일), K(내용)
-      const updateRange = `H${contactData.rowNumber}:K${contactData.rowNumber}`;
-      const updateValues = [[
-        contactData.mdName,
-        contactData.contactDate,
-        contactData.content,
-        contactData.result, // 내용 옆에 결과도 저장
-      ]];
-
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
-        range: updateRange,
-        valueInputOption: 'RAW',
-        requestBody: {
-          values: updateValues,
-        },
+      const updates: Array<{ range: string; values: string[][] }> = [];
+      
+      // 컨택MD, 최근컨택일, 내용 컬럼 업데이트 (H, J, K)
+      updates.push({
+        range: `H${contactData.rowNumber}:K${contactData.rowNumber}`,
+        values: [[
+          contactData.mdName,
+          contactData.contactDate,
+          contactData.content,
+          contactData.result,
+        ]],
       });
+
+      // 공란 데이터 보완 (연락처, 운영상태, 유형, 예약시스템1, 예약시스템2)
+      // 컬럼 위치: F(연락처), G(운영상태), L(유형), M(예약시스템1), N(예약시스템2)
+      if (contactData.연락처) {
+        updates.push({
+          range: `F${contactData.rowNumber}`,
+          values: [[contactData.연락처]],
+        });
+      }
+      if (contactData.운영상태) {
+        updates.push({
+          range: `G${contactData.rowNumber}`,
+          values: [[contactData.운영상태]],
+        });
+      }
+      if (contactData.유형) {
+        updates.push({
+          range: `L${contactData.rowNumber}`,
+          values: [[contactData.유형]],
+        });
+      }
+      if (contactData.예약시스템1) {
+        updates.push({
+          range: `M${contactData.rowNumber}`,
+          values: [[contactData.예약시스템1]],
+        });
+      }
+      if (contactData.예약시스템2) {
+        updates.push({
+          range: `N${contactData.rowNumber}`,
+          values: [[contactData.예약시스템2]],
+        });
+      }
+
+      // 배치 업데이트
+      for (const update of updates) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
+          range: update.range,
+          valueInputOption: 'RAW',
+          requestBody: {
+            values: update.values,
+          },
+        });
+      }
     }
   } catch (error) {
     console.error('Error saving contact info:', error);
@@ -297,7 +381,7 @@ export async function getContactInfo() {
       return [];
     }
 
-    const headers = ['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate'];
+    const headers = ['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate'];
     const data = rows.slice(1).map((row) => {
       const item: any = {};
       headers.forEach((header, colIndex) => {

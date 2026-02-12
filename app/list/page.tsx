@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, differenceInDays, parseISO, isAfter, isBefore } from 'date-fns';
 
 interface CampingItem {
   id: number;
@@ -35,9 +35,11 @@ interface ContactInfo {
   rejectionReason?: string;
   content: string;
   contactDate: string;
+  followUpDate?: string; // 재연락 예정일
+  lastContactDate?: string; // 최종 컨택일
 }
 
-const RESULT_OPTIONS = ['미응답', '재연락', '입점전환', '거절'];
+const RESULT_OPTIONS = ['미응답', '재연락', '입점전환', '거절', '기타'];
 const REJECTION_REASONS = ['수수료', '기능불만', '서비스불만', '현재만족', '약정계약', '기타'];
 
 export default function ListPage() {
@@ -57,6 +59,10 @@ export default function ListPage() {
     search: '',
     excludeCampfit: false,
     onlyNonCampfit: false,
+    followUpDateFrom: '', // 재연락 예정일 시작
+    followUpDateTo: '', // 재연락 예정일 종료
+    daysSinceContactMin: '', // 경과일 최소
+    daysSinceContactMax: '', // 경과일 최대
   });
 
   const [contactForm, setContactForm] = useState({
@@ -64,6 +70,13 @@ export default function ListPage() {
     result: '',
     rejectionReason: '',
     content: '',
+    followUpDate: '', // 재연락 예정일
+    // 공란 데이터 보완
+    연락처: '',
+    운영상태: '',
+    유형: '',
+    예약시스템1: '',
+    예약시스템2: '',
   });
 
   useEffect(() => {
@@ -115,6 +128,28 @@ export default function ListPage() {
     return contacts.find((c) => c.campingId === id);
   };
 
+  // 컨택 후 경과일 계산
+  const getDaysSinceContact = (contactDate?: string): number | null => {
+    if (!contactDate) return null;
+    try {
+      const date = parseISO(contactDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
+      return differenceInDays(today, date);
+    } catch {
+      return null;
+    }
+  };
+
+  // 경과일 색상 클래스
+  const getDaysSinceContactColor = (days: number | null): string => {
+    if (days === null) return 'text-slate-400';
+    if (days <= 3) return 'text-slate-700';
+    if (days <= 7) return 'text-orange-600';
+    return 'text-red-600';
+  };
+
   const filteredList = useMemo(() => {
     if (!campingList || campingList.length === 0) {
       return [];
@@ -152,6 +187,39 @@ export default function ListPage() {
       if (filters.result && contact?.result !== filters.result) return false;
       if (filters.rejectionReason && contact?.rejectionReason !== filters.rejectionReason) return false;
 
+      // 재연락 예정일 필터
+      if (filters.followUpDateFrom || filters.followUpDateTo) {
+        const followUpDate = contact?.followUpDate;
+        if (!followUpDate) return false;
+        try {
+          const followUp = parseISO(followUpDate);
+          if (filters.followUpDateFrom) {
+            const from = parseISO(filters.followUpDateFrom);
+            if (isBefore(followUp, from)) return false;
+          }
+          if (filters.followUpDateTo) {
+            const to = parseISO(filters.followUpDateTo);
+            if (isAfter(followUp, to)) return false;
+          }
+        } catch {
+          return false;
+        }
+      }
+
+      // 컨택 후 경과일 필터
+      if (filters.daysSinceContactMin || filters.daysSinceContactMax) {
+        const days = getDaysSinceContact(contact?.lastContactDate || contact?.contactDate);
+        if (days === null) return false;
+        if (filters.daysSinceContactMin) {
+          const min = parseInt(filters.daysSinceContactMin);
+          if (days < min) return false;
+        }
+        if (filters.daysSinceContactMax) {
+          const max = parseInt(filters.daysSinceContactMax);
+          if (days > max) return false;
+        }
+      }
+
       return true;
     });
   }, [campingList, filters, contacts]);
@@ -162,15 +230,32 @@ export default function ListPage() {
       return;
     }
 
+    // 재연락 선택 시 예정일 필수
+    if (contactForm.result === '재연락' && !contactForm.followUpDate) {
+      alert('재연락을 선택하셨습니다. 재연락 예정일을 입력해주세요.');
+      return;
+    }
+
     try {
+      const item = campingList.find(c => c.id === campingId);
       await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           campingId,
           rowNumber,
-          ...contactForm,
+          mdName: contactForm.mdName,
+          result: contactForm.result,
+          rejectionReason: contactForm.rejectionReason,
+          content: contactForm.content,
+          followUpDate: contactForm.followUpDate,
           contactDate: format(new Date(), 'yyyy-MM-dd'),
+          // 공란 데이터 보완 (기존 값이 없을 때만 업데이트)
+          연락처: !item?.['연락처'] ? contactForm.연락처 : undefined,
+          운영상태: !item?.['운영상태'] ? contactForm.운영상태 : undefined,
+          유형: !item?.['유형'] ? contactForm.유형 : undefined,
+          예약시스템1: !item?.['예약시스템1'] ? contactForm.예약시스템1 : undefined,
+          예약시스템2: !item?.['예약시스템2'] ? contactForm.예약시스템2 : undefined,
         }),
       });
 
@@ -179,6 +264,12 @@ export default function ListPage() {
         result: '',
         rejectionReason: '',
         content: '',
+        followUpDate: '',
+        연락처: '',
+        운영상태: '',
+        유형: '',
+        예약시스템1: '',
+        예약시스템2: '',
       });
       setEditingId(null);
       await fetchData();
@@ -263,6 +354,91 @@ export default function ListPage() {
             </div>
           </div>
         </div>
+
+        {/* 재연락 관리 섹션 */}
+        {(() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const sevenDaysLater = new Date(today);
+          sevenDaysLater.setDate(today.getDate() + 7);
+          
+          const upcomingFollowUps = contacts
+            .filter(c => {
+              if (!c.followUpDate) return false;
+              try {
+                const followUp = parseISO(c.followUpDate);
+                followUp.setHours(0, 0, 0, 0);
+                return followUp >= today && followUp <= sevenDaysLater;
+              } catch {
+                return false;
+              }
+            })
+            .sort((a, b) => {
+              if (!a.followUpDate || !b.followUpDate) return 0;
+              try {
+                return parseISO(a.followUpDate).getTime() - parseISO(b.followUpDate).getTime();
+              } catch {
+                return 0;
+              }
+            })
+            .map(c => {
+              const item = campingList.find(camp => camp.id === c.campingId);
+              return { ...c, item };
+            })
+            .filter(c => c.item);
+
+          if (upcomingFollowUps.length === 0) return null;
+
+          return (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl shadow-lg p-6 mb-6 border-2 border-amber-200">
+              <div className="flex items-center gap-2 mb-4">
+                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h2 className="text-xl font-bold text-amber-900">7일 내 재연락 예정 캠핑장</h2>
+                <span className="px-3 py-1 bg-amber-200 text-amber-800 rounded-full text-sm font-semibold">
+                  {upcomingFollowUps.length}건
+                </span>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {upcomingFollowUps.map((c) => (
+                  <div key={c.campingId} className="bg-white rounded-lg p-3 border border-amber-200 hover:shadow-md transition">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold text-slate-900">{c.item?.['캠핑장명'] || '-'}</div>
+                        <div className="text-sm text-slate-600 mt-1">
+                          MD: {c.mdName} | 예정일: {c.followUpDate}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const item = campingList.find(camp => camp.id === c.campingId);
+                          setEditingId(c.campingId);
+                          // 기존 컨택 정보로 폼 초기화
+                          setContactForm({
+                            mdName: c.mdName,
+                            result: c.result,
+                            rejectionReason: c.rejectionReason || '',
+                            content: c.content,
+                            followUpDate: c.followUpDate || '',
+                            연락처: item?.['연락처'] || '',
+                            운영상태: item?.['운영상태'] || '',
+                            유형: item?.['유형'] || '',
+                            예약시스템1: item?.['예약시스템1'] || '',
+                            예약시스템2: item?.['예약시스템2'] || '',
+                          });
+                        }}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
+                      >
+                        수정
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 필터 영역 */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-slate-200">
@@ -352,6 +528,50 @@ export default function ListPage() {
                 미입점만 보기
               </label>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-slate-700">재연락 예정일 (시작)</label>
+              <input
+                type="date"
+                value={filters.followUpDateFrom}
+                onChange={(e) => setFilters({ ...filters, followUpDateFrom: e.target.value })}
+                className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-slate-700">재연락 예정일 (종료)</label>
+              <input
+                type="date"
+                value={filters.followUpDateTo}
+                onChange={(e) => setFilters({ ...filters, followUpDateTo: e.target.value })}
+                className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-slate-700">경과일 (최소)</label>
+              <input
+                type="number"
+                min="0"
+                value={filters.daysSinceContactMin}
+                onChange={(e) => setFilters({ ...filters, daysSinceContactMin: e.target.value })}
+                className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                placeholder="일"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-slate-700">경과일 (최대)</label>
+              <input
+                type="number"
+                min="0"
+                value={filters.daysSinceContactMax}
+                onChange={(e) => setFilters({ ...filters, daysSinceContactMax: e.target.value })}
+                className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                placeholder="일"
+              />
+            </div>
           </div>
         </div>
 
@@ -369,6 +589,7 @@ export default function ListPage() {
                   <th className="p-3 text-left text-sm font-semibold whitespace-nowrap">예약시스템</th>
                   <th className="p-3 text-left text-sm font-semibold whitespace-nowrap">입점여부</th>
                   <th className="p-3 text-left text-sm font-semibold whitespace-nowrap">컨택정보</th>
+                  <th className="p-3 text-left text-sm font-semibold whitespace-nowrap">경과일</th>
                   <th className="p-3 text-left text-sm font-semibold whitespace-nowrap">작업</th>
                 </tr>
               </thead>
@@ -424,14 +645,58 @@ export default function ListPage() {
                               <div className="font-medium text-slate-900">MD: {contact.mdName}</div>
                               <div className="text-slate-600">결과: {contact.result}</div>
                               <div className="text-slate-500">일자: {contact.contactDate}</div>
+                              {contact.followUpDate && (
+                                <div className="text-blue-600 font-medium">재연락: {contact.followUpDate}</div>
+                              )}
                             </div>
                           ) : (
                             <span className="text-slate-400">-</span>
                           )}
                         </td>
+                        <td className="p-3 text-sm whitespace-nowrap">
+                          {(() => {
+                            const days = getDaysSinceContact(contact?.lastContactDate || contact?.contactDate);
+                            if (days === null) return <span className="text-slate-400">-</span>;
+                            return (
+                              <span className={`font-semibold ${getDaysSinceContactColor(days)}`}>
+                                {days}일
+                              </span>
+                            );
+                          })()}
+                        </td>
                         <td className="p-3 whitespace-nowrap">
                           <button
-                            onClick={() => setEditingId(item.id)}
+                            onClick={() => {
+                              setEditingId(item.id);
+                              // 기존 컨택 정보가 있으면 폼에 채우기
+                              if (contact) {
+                                setContactForm({
+                                  mdName: contact.mdName,
+                                  result: contact.result,
+                                  rejectionReason: contact.rejectionReason || '',
+                                  content: contact.content,
+                                  followUpDate: contact.followUpDate || '',
+                                  연락처: item['연락처'] || '',
+                                  운영상태: item['운영상태'] || '',
+                                  유형: item['유형'] || '',
+                                  예약시스템1: item['예약시스템1'] || '',
+                                  예약시스템2: item['예약시스템2'] || '',
+                                });
+                              } else {
+                                setContactForm({
+                                  mdName: '',
+                                  result: '',
+                                  rejectionReason: '',
+                                  content: '',
+                                  followUpDate: '',
+                                  연락처: item['연락처'] || '',
+                                  운영상태: item['운영상태'] || '',
+                                  유형: item['유형'] || '',
+                                  예약시스템1: item['예약시스템1'] || '',
+                                  예약시스템2: item['예약시스템2'] || '',
+                                });
+                              }
+                            }}
                             className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-sm"
                           >
                             컨택입력
@@ -442,7 +707,7 @@ export default function ListPage() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={9} className="p-12 text-center text-slate-500">
+                    <td colSpan={10} className="p-12 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-2">
                         <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -471,6 +736,12 @@ export default function ListPage() {
                       result: '',
                       rejectionReason: '',
                       content: '',
+                      followUpDate: '',
+                      연락처: '',
+                      운영상태: '',
+                      유형: '',
+                      예약시스템1: '',
+                      예약시스템2: '',
                     });
                   }}
                   className="text-slate-400 hover:text-slate-600"
@@ -533,6 +804,22 @@ export default function ListPage() {
                   </div>
                 )}
 
+                {contactForm.result === '재연락' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-slate-700">
+                      재연락 예정일 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={contactForm.followUpDate}
+                      onChange={(e) => setContactForm({ ...contactForm, followUpDate: e.target.value })}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      required
+                    />
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium mb-2 text-slate-700">내용</label>
                   <textarea
@@ -543,6 +830,82 @@ export default function ListPage() {
                     placeholder="컨택 내용을 입력하세요"
                   />
                 </div>
+
+                {/* 공란 데이터 보완 입력 */}
+                {(() => {
+                  const item = campingList.find(c => c.id === editingId);
+                  const hasEmptyFields = !item?.['연락처'] || !item?.['운영상태'] || !item?.['유형'] || !item?.['예약시스템1'];
+                  
+                  if (!hasEmptyFields) return null;
+
+                  return (
+                    <div className="border-t border-slate-200 pt-4 mt-4">
+                      <h3 className="text-sm font-semibold text-slate-700 mb-3">공란 데이터 보완 (선택사항)</h3>
+                      <div className="space-y-3">
+                        {!item?.['연락처'] && (
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-slate-600">연락처</label>
+                            <input
+                              type="text"
+                              value={contactForm.연락처}
+                              onChange={(e) => setContactForm({ ...contactForm, 연락처: e.target.value })}
+                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                              placeholder="연락처 입력"
+                            />
+                          </div>
+                        )}
+                        {!item?.['운영상태'] && (
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-slate-600">운영상태</label>
+                            <input
+                              type="text"
+                              value={contactForm.운영상태}
+                              onChange={(e) => setContactForm({ ...contactForm, 운영상태: e.target.value })}
+                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                              placeholder="운영상태 입력 (예: 운영중)"
+                            />
+                          </div>
+                        )}
+                        {!item?.['유형'] && (
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-slate-600">유형</label>
+                            <input
+                              type="text"
+                              value={contactForm.유형}
+                              onChange={(e) => setContactForm({ ...contactForm, 유형: e.target.value })}
+                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                              placeholder="유형 입력 (예: 오토캠핑, 글램핑)"
+                            />
+                          </div>
+                        )}
+                        {!item?.['예약시스템1'] && (
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-slate-600">예약시스템1</label>
+                            <input
+                              type="text"
+                              value={contactForm.예약시스템1}
+                              onChange={(e) => setContactForm({ ...contactForm, 예약시스템1: e.target.value })}
+                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                              placeholder="예약시스템 입력"
+                            />
+                          </div>
+                        )}
+                        {!item?.['예약시스템2'] && (
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-slate-600">예약시스템2</label>
+                            <input
+                              type="text"
+                              value={contactForm.예약시스템2}
+                              onChange={(e) => setContactForm({ ...contactForm, 예약시스템2: e.target.value })}
+                              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                              placeholder="예약시스템 입력"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="mt-6 flex gap-2">
@@ -554,6 +917,12 @@ export default function ListPage() {
                       result: '',
                       rejectionReason: '',
                       content: '',
+                      followUpDate: '',
+                      연락처: '',
+                      운영상태: '',
+                      유형: '',
+                      예약시스템1: '',
+                      예약시스템2: '',
                     });
                   }}
                   className="flex-1 px-4 py-2.5 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition font-medium"

@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
       rejectionReason: body.rejectionReason,
       content: body.content,
       contactDate: body.contactDate,
+      followUpDate: body.followUpDate,
+      // 공란 데이터 보완
+      연락처: body.연락처,
+      운영상태: body.운영상태,
+      유형: body.유형,
+      예약시스템1: body.예약시스템1,
+      예약시스템2: body.예약시스템2,
     });
     return NextResponse.json({ success: true });
   } catch (error) {
