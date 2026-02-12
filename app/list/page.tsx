@@ -37,9 +37,11 @@ interface ContactInfo {
   contactDate: string;
   followUpDate?: string; // 재연락 예정일
   lastContactDate?: string; // 최종 컨택일
+  md입력예약시스템1?: string; // MD가 입력한 예약시스템1
+  md입력예약시스템2?: string; // MD가 입력한 예약시스템2
 }
 
-const RESULT_OPTIONS = ['미응답', '재연락', '입점전환', '거절', '기타'];
+const RESULT_OPTIONS = ['부재', '검토(재연락)', '입점(신규)', '거절(WHY)', '기타(내용입력)'];
 const REJECTION_REASONS = ['수수료', '기능불만', '서비스불만', '현재만족', '약정계약', '기타'];
 
 export default function ListPage() {
@@ -52,13 +54,13 @@ export default function ListPage() {
     지역: '',
     운영상태: '',
     유형: '',
-    예약시스템: '',
+    예약시스템: '', // DB의 예약시스템
+    md입력예약시스템: '', // MD가 입력한 예약시스템
     mdName: '',
     result: '',
     rejectionReason: '',
     search: '',
-    excludeCampfit: false,
-    onlyNonCampfit: false,
+    입점여부: '', // 전체, 미입점만, 입점만
     followUpDateFrom: '', // 재연락 예정일 시작
     followUpDateTo: '', // 재연락 예정일 종료
     daysSinceContactMin: '', // 경과일 최소
@@ -124,8 +126,27 @@ export default function ListPage() {
     }
   };
 
+  // 최근 컨택 정보 가져오기 (가장 최근 것)
   const getContactForItem = (id: number): ContactInfo | undefined => {
-    return contacts.find((c) => c.campingId === id);
+    const itemContacts = contacts
+      .filter((c) => c.campingId === id)
+      .sort((a, b) => {
+        const dateA = a.lastContactDate || a.contactDate;
+        const dateB = b.lastContactDate || b.contactDate;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
+    return itemContacts[0];
+  };
+
+  // 모든 컨택 히스토리 가져오기 (최신순)
+  const getContactHistoryForItem = (id: number): ContactInfo[] => {
+    return contacts
+      .filter((c) => c.campingId === id)
+      .sort((a, b) => {
+        const dateA = a.lastContactDate || a.contactDate;
+        const dateB = b.lastContactDate || b.contactDate;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
   };
 
   // 컨택 후 경과일 계산
@@ -177,15 +198,28 @@ export default function ListPage() {
         }
       }
 
-      // 입점 필터
-      if (filters.excludeCampfit && item.isCampfitMember) return false;
-      if (filters.onlyNonCampfit && item.isCampfitMember) return false;
+      // 입점여부 필터
+      if (filters.입점여부 === '미입점만' && item.isCampfitMember) return false;
+      if (filters.입점여부 === '입점만' && !item.isCampfitMember) return false;
 
       // MD 이름 및 결과 필터
       const contact = getContactForItem(item.id);
       if (filters.mdName && contact?.mdName !== filters.mdName) return false;
       if (filters.result && contact?.result !== filters.result) return false;
       if (filters.rejectionReason && contact?.rejectionReason !== filters.rejectionReason) return false;
+
+      // MD가 입력한 예약시스템 필터
+      if (filters.md입력예약시스템) {
+        const md입력시스템1 = contact?.md입력예약시스템1 || '';
+        const md입력시스템2 = contact?.md입력예약시스템2 || '';
+        const filterLower = filters.md입력예약시스템.toLowerCase();
+        if (
+          !md입력시스템1.toLowerCase().includes(filterLower) &&
+          !md입력시스템2.toLowerCase().includes(filterLower)
+        ) {
+          return false;
+        }
+      }
 
       // 재연락 예정일 필터
       if (filters.followUpDateFrom || filters.followUpDateTo) {
@@ -230,9 +264,9 @@ export default function ListPage() {
       return;
     }
 
-    // 재연락 선택 시 예정일 필수
-    if (contactForm.result === '재연락' && !contactForm.followUpDate) {
-      alert('재연락을 선택하셨습니다. 재연락 예정일을 입력해주세요.');
+    // 검토(재연락) 선택 시 예정일 필수
+    if (contactForm.result === '검토(재연락)' && !contactForm.followUpDate) {
+      alert('검토(재연락)를 선택하셨습니다. 재연락 예정일을 입력해주세요.');
       return;
     }
 
@@ -503,30 +537,28 @@ export default function ListPage() {
               />
             </div>
 
-            <div className="flex items-center gap-3 pt-6">
-              <input
-                type="checkbox"
-                id="excludeCampfit"
-                checked={filters.excludeCampfit}
-                onChange={(e) => setFilters({ ...filters, excludeCampfit: e.target.checked, onlyNonCampfit: false })}
-                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="excludeCampfit" className="text-sm text-slate-700 cursor-pointer">
-                입점 업체 제외
-              </label>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-slate-700">입점여부</label>
+              <select
+                value={filters.입점여부}
+                onChange={(e) => setFilters({ ...filters, 입점여부: e.target.value })}
+                className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              >
+                <option value="">전체</option>
+                <option value="미입점만">미입점만</option>
+                <option value="입점만">입점만</option>
+              </select>
             </div>
 
-            <div className="flex items-center gap-3 pt-6">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-slate-700">MD 입력 예약시스템</label>
               <input
-                type="checkbox"
-                id="onlyNonCampfit"
-                checked={filters.onlyNonCampfit}
-                onChange={(e) => setFilters({ ...filters, onlyNonCampfit: e.target.checked, excludeCampfit: false })}
-                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                type="text"
+                placeholder="MD가 입력한 예약시스템"
+                value={filters.md입력예약시스템}
+                onChange={(e) => setFilters({ ...filters, md입력예약시스템: e.target.value })}
+                className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               />
-              <label htmlFor="onlyNonCampfit" className="text-sm text-slate-700 cursor-pointer">
-                미입점만 보기
-              </label>
             </div>
 
             <div>
@@ -603,28 +635,48 @@ export default function ListPage() {
                           <div className="font-medium">{item['지역(광역)'] || '-'}</div>
                           <div className="text-xs text-slate-500">{item['지역(시/군/리)'] || ''}</div>
                         </td>
-                        <td className="p-3 text-sm">
-                          <div className="font-semibold text-slate-900">{item['캠핑장명'] || '-'}</div>
-                          <div className="text-xs text-slate-500 mt-1 max-w-xs truncate">{item['주소'] || ''}</div>
+                        <td className="p-3 text-sm whitespace-nowrap">
+                          <div className="font-semibold text-slate-900 truncate max-w-[200px]" title={item['캠핑장명'] || '-'}>
+                            {item['캠핑장명'] || '-'}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-1 max-w-[200px] truncate" title={item['주소'] || ''}>
+                            {item['주소'] || ''}
+                          </div>
                         </td>
-                        <td className="p-3 text-sm text-slate-700 whitespace-nowrap">{item['연락처'] || '-'}</td>
-                        <td className="p-3 text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        <td className="p-3 text-sm text-slate-700 whitespace-nowrap truncate max-w-[120px]" title={item['연락처'] || '-'}>
+                          {item['연락처'] || '-'}
+                        </td>
+                        <td className="p-3 text-sm whitespace-nowrap">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium truncate max-w-[100px] ${
                             item['운영상태'] === '운영중' 
                               ? 'bg-green-100 text-green-800' 
                               : item['운영상태'] === '폐업'
                               ? 'bg-red-100 text-red-800'
                               : 'bg-slate-100 text-slate-800'
-                          }`}>
+                          }`} title={item['운영상태'] || '-'}>
                             {item['운영상태'] || '-'}
                           </span>
                         </td>
-                        <td className="p-3 text-sm text-slate-700 whitespace-nowrap">{item['유형'] || '-'}</td>
-                        <td className="p-3 text-sm text-slate-700">
+                        <td className="p-3 text-sm text-slate-700 whitespace-nowrap truncate max-w-[100px]" title={item['유형'] || '-'}>
+                          {item['유형'] || '-'}
+                        </td>
+                        <td className="p-3 text-sm text-slate-700 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
-                            {item['예약시스템1'] && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{item['예약시스템1']}</span>}
-                            {item['예약시스템2'] && <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{item['예약시스템2']}</span>}
-                            {item['예약시스템3'] && <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">{item['예약시스템3']}</span>}
+                            {item['예약시스템1'] && (
+                              <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded truncate max-w-[120px]" title={item['예약시스템1']}>
+                                {item['예약시스템1']}
+                              </span>
+                            )}
+                            {item['예약시스템2'] && (
+                              <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded truncate max-w-[120px]" title={item['예약시스템2']}>
+                                {item['예약시스템2']}
+                              </span>
+                            )}
+                            {item['예약시스템3'] && (
+                              <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded truncate max-w-[120px]" title={item['예약시스템3']}>
+                                {item['예약시스템3']}
+                              </span>
+                            )}
                             {!item['예약시스템1'] && !item['예약시스템2'] && !item['예약시스템3'] && <span className="text-slate-400">-</span>}
                           </div>
                         </td>
@@ -639,14 +691,35 @@ export default function ListPage() {
                             </span>
                           )}
                         </td>
-                        <td className="p-3 text-sm">
+                        <td className="p-3 text-sm whitespace-nowrap">
                           {contact ? (
                             <div className="text-xs space-y-1">
-                              <div className="font-medium text-slate-900">MD: {contact.mdName}</div>
-                              <div className="text-slate-600">결과: {contact.result}</div>
-                              <div className="text-slate-500">일자: {contact.contactDate}</div>
+                              <div className="font-medium text-slate-900 truncate max-w-[150px]" title={`MD: ${contact.mdName}`}>
+                                MD: {contact.mdName}
+                              </div>
+                              <div className="text-slate-600 truncate max-w-[150px]" title={`결과: ${contact.result}`}>
+                                결과: {contact.result}
+                              </div>
+                              <div className="text-slate-500 truncate max-w-[150px]" title={`일자: ${contact.contactDate}`}>
+                                일자: {contact.contactDate}
+                              </div>
                               {contact.followUpDate && (
-                                <div className="text-blue-600 font-medium">재연락: {contact.followUpDate}</div>
+                                <div className="text-blue-600 font-medium truncate max-w-[150px]" title={`재연락: ${contact.followUpDate}`}>
+                                  재연락: {contact.followUpDate}
+                                </div>
+                              )}
+                              {getContactHistoryForItem(item.id).length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    const history = getContactHistoryForItem(item.id);
+                                    setSelectedHistoryId(item.id);
+                                    setContactHistory(history);
+                                    setHistoryPage(1);
+                                  }}
+                                  className="mt-1 text-blue-600 hover:text-blue-800 text-xs underline"
+                                >
+                                  히스토리 ({getContactHistoryForItem(item.id).length})
+                                </button>
                               )}
                             </div>
                           ) : (
@@ -722,6 +795,85 @@ export default function ListPage() {
           </div>
         </div>
 
+        {/* 컨택 히스토리 모달 */}
+        {selectedHistoryId && contactHistory.length > 0 && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-slate-900">
+                  컨택 히스토리 ({contactHistory.length}건)
+                </h2>
+                <button
+                  onClick={() => {
+                    setSelectedHistoryId(null);
+                    setContactHistory([]);
+                    setHistoryPage(1);
+                  }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {contactHistory
+                  .slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE)
+                  .map((contact, index) => (
+                    <div key={index} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <div className="font-semibold text-slate-900">{contact.mdName}</div>
+                          <div className="text-sm text-slate-600 mt-1">
+                            {contact.contactDate} | {contact.result}
+                            {contact.rejectionReason && ` (${contact.rejectionReason})`}
+                          </div>
+                        </div>
+                        <span className="text-xs text-slate-500">
+                          #{contactHistory.length - (historyPage - 1) * HISTORY_PER_PAGE - index}
+                        </span>
+                      </div>
+                      {contact.content && (
+                        <div className="text-sm text-slate-700 mt-2 p-2 bg-slate-50 rounded">
+                          {contact.content}
+                        </div>
+                      )}
+                      {contact.followUpDate && (
+                        <div className="text-xs text-blue-600 mt-2">
+                          재연락 예정일: {contact.followUpDate}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+
+              {/* 페이지네이션 */}
+              {contactHistory.length > HISTORY_PER_PAGE && (
+                <div className="flex justify-center items-center gap-2 mt-6">
+                  <button
+                    onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
+                    disabled={historyPage === 1}
+                    className="px-3 py-1 border border-slate-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
+                  >
+                    이전
+                  </button>
+                  <span className="text-sm text-slate-600">
+                    {historyPage} / {Math.ceil(contactHistory.length / HISTORY_PER_PAGE)}
+                  </span>
+                  <button
+                    onClick={() => setHistoryPage(Math.min(Math.ceil(contactHistory.length / HISTORY_PER_PAGE), historyPage + 1))}
+                    disabled={historyPage >= Math.ceil(contactHistory.length / HISTORY_PER_PAGE)}
+                    className="px-3 py-1 border border-slate-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
+                  >
+                    다음
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 컨택 입력 모달 */}
         {editingId && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
@@ -770,7 +922,7 @@ export default function ListPage() {
                     value={contactForm.result}
                     onChange={(e) => {
                       const newForm = { ...contactForm, result: e.target.value };
-                      if (e.target.value !== '거절') {
+                      if (e.target.value !== '거절(WHY)') {
                         newForm.rejectionReason = '';
                       }
                       setContactForm(newForm);
@@ -786,7 +938,7 @@ export default function ListPage() {
                   </select>
                 </div>
 
-                {contactForm.result === '거절' && (
+                {contactForm.result === '거절(WHY)' && (
                   <div>
                     <label className="block text-sm font-medium mb-2 text-slate-700">거절 사유</label>
                     <select
@@ -804,7 +956,7 @@ export default function ListPage() {
                   </div>
                 )}
 
-                {contactForm.result === '재연락' && (
+                {contactForm.result === '검토(재연락)' && (
                   <div>
                     <label className="block text-sm font-medium mb-2 text-slate-700">
                       재연락 예정일 <span className="text-red-500">*</span>

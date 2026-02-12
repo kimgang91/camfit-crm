@@ -241,13 +241,13 @@ async function ensureMDContactsSheet() {
         },
       });
 
-      // 헤더 추가 (재연락 예정일 포함)
+      // 헤더 추가 (재연락 예정일, MD 입력 예약시스템 포함)
       await sheets.spreadsheets.values.update({
         spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
-        range: 'MD_Contacts!A1:H1',
+        range: 'MD_Contacts!A1:J1',
         valueInputOption: 'RAW',
         requestBody: {
-          values: [['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate']],
+          values: [['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate', 'md입력예약시스템1', 'md입력예약시스템2']],
         },
       });
     }
@@ -279,7 +279,7 @@ export async function saveContactInfo(contactData: {
     
     // MD_Contacts 시트에도 저장 (히스토리용)
     await ensureMDContactsSheet();
-    const historyRange = 'MD_Contacts!A:H';
+    const historyRange = 'MD_Contacts!A:J';
     const historyValues = [[
       contactData.campingId,
       contactData.mdName,
@@ -289,6 +289,8 @@ export async function saveContactInfo(contactData: {
       contactData.contactDate,
       contactData.followUpDate || '',
       contactData.contactDate, // 최종 컨택일
+      contactData.예약시스템1 || '', // MD가 입력한 예약시스템1
+      contactData.예약시스템2 || '', // MD가 입력한 예약시스템2
     ]];
 
     await sheets.spreadsheets.values.append({
@@ -318,31 +320,32 @@ export async function saveContactInfo(contactData: {
 
       // 공란 데이터 보완 (연락처, 운영상태, 유형, 예약시스템1, 예약시스템2)
       // 컬럼 위치: F(연락처), G(운영상태), L(유형), M(예약시스템1), N(예약시스템2)
-      if (contactData.연락처) {
+      // 입력된 값이 있으면 항상 업데이트 (공란 보완 목적)
+      if (contactData.연락처 !== undefined && contactData.연락처 !== '') {
         updates.push({
           range: `F${contactData.rowNumber}`,
           values: [[contactData.연락처]],
         });
       }
-      if (contactData.운영상태) {
+      if (contactData.운영상태 !== undefined && contactData.운영상태 !== '') {
         updates.push({
           range: `G${contactData.rowNumber}`,
           values: [[contactData.운영상태]],
         });
       }
-      if (contactData.유형) {
+      if (contactData.유형 !== undefined && contactData.유형 !== '') {
         updates.push({
           range: `L${contactData.rowNumber}`,
           values: [[contactData.유형]],
         });
       }
-      if (contactData.예약시스템1) {
+      if (contactData.예약시스템1 !== undefined && contactData.예약시스템1 !== '') {
         updates.push({
           range: `M${contactData.rowNumber}`,
           values: [[contactData.예약시스템1]],
         });
       }
-      if (contactData.예약시스템2) {
+      if (contactData.예약시스템2 !== undefined && contactData.예약시스템2 !== '') {
         updates.push({
           range: `N${contactData.rowNumber}`,
           values: [[contactData.예약시스템2]],
@@ -373,7 +376,7 @@ export async function getContactInfo() {
     const sheets = getSheetsClient();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: CAMPING_DB_SPREADSHEET_ID,
-      range: 'MD_Contacts!A:F',
+      range: 'MD_Contacts!A:J',
     });
 
     const rows = response.data.values;
@@ -381,7 +384,7 @@ export async function getContactInfo() {
       return [];
     }
 
-    const headers = ['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate'];
+    const headers = ['campingId', 'mdName', 'result', 'rejectionReason', 'content', 'contactDate', 'followUpDate', 'lastContactDate', 'md입력예약시스템1', 'md입력예약시스템2'];
     const data = rows.slice(1).map((row) => {
       const item: any = {};
       headers.forEach((header, colIndex) => {
