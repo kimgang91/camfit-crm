@@ -78,22 +78,51 @@ export default function ListPage() {
         fetch('/api/contacts'),
       ]);
 
-      const campingData = await campingRes.json();
-      const contactsData = await contactsRes.json();
+      // 응답 상태 확인
+      if (!campingRes.ok) {
+        const errorData = await campingRes.json().catch(() => ({}));
+        console.error('Camping API error:', errorData);
+        throw new Error(errorData.error || `HTTP error! status: ${campingRes.status}`);
+      }
+
+      if (!contactsRes.ok) {
+        const errorData = await contactsRes.json().catch(() => ({}));
+        console.error('Contacts API error:', errorData);
+        // contacts는 선택적이므로 에러가 나도 계속 진행
+      }
+
+      const campingData = await campingRes.json().catch(() => ({ data: [] }));
+      const contactsData = await contactsRes.json().catch(() => ({ data: [] }));
 
       setCampingList(campingData.data || []);
       setContacts(contactsData.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching data:', error);
-      alert('데이터를 불러오는 중 오류가 발생했습니다.');
+      // 에러가 발생해도 빈 배열로 설정하여 앱이 크래시되지 않도록
+      setCampingList([]);
+      setContacts([]);
+      // alert는 사용자 경험을 해칠 수 있으므로 제거하거나 조건부로 표시
+      if (error.message && !error.message.includes('HTTP error')) {
+        console.warn('Data fetch warning:', error.message);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  const getContactForItem = (id: number): ContactInfo | undefined => {
+    return contacts.find((c) => c.campingId === id);
+  };
+
   const filteredList = useMemo(() => {
+    if (!campingList || campingList.length === 0) {
+      return [];
+    }
+
     return campingList.filter((item) => {
+      if (!item) return false;
+
       // 필터 적용
       if (filters.지역 && item['지역(광역)'] !== filters.지역) return false;
       if (filters.운영상태 && item['운영상태'] !== filters.운영상태) return false;
@@ -106,10 +135,9 @@ export default function ListPage() {
       // 검색어 필터
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        if (
-          !item['캠핑장명']?.toLowerCase().includes(searchLower) &&
-          !item['주소']?.toLowerCase().includes(searchLower)
-        ) {
+        const campingName = item['캠핑장명']?.toLowerCase() || '';
+        const address = item['주소']?.toLowerCase() || '';
+        if (!campingName.includes(searchLower) && !address.includes(searchLower)) {
           return false;
         }
       }
@@ -127,10 +155,6 @@ export default function ListPage() {
       return true;
     });
   }, [campingList, filters, contacts]);
-
-  const getContactForItem = (id: number): ContactInfo | undefined => {
-    return contacts.find((c) => c.campingId === id);
-  };
 
   const handleSaveContact = async (campingId: number, rowNumber?: number) => {
     if (!contactForm.mdName || !contactForm.result) {
