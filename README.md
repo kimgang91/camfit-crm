@@ -1,153 +1,223 @@
-# 캠핏 영업 CRM 관리 시스템
+# 올포유필라테스 홍보 웹사이트
 
-캠핑장 영업 MD들이 사용할 웹/모바일 기반 영업 CRM 관리 페이지입니다.
+서울시 강동구 둔촌동에 위치한 올포유필라테스 스튜디오의 홍보 웹사이트입니다.
 
-## 주요 기능
+## 📋 필요한 정보 및 업데이트 사항
 
-1. **캠핑장 DB 기반 컨택 관리**
-   - Google Sheets API 연동
-   - 실시간 동기화
-   - 리스트 형태로 캠핑장 정보 표시
+웹사이트를 완성하기 위해 다음 정보들을 업데이트해주세요:
 
-2. **MD별 영업 활동 추적**
-   - MD별 컨택 기록
-   - 결과별 통계
-   - 월간 입점 전환 순위
+### 1. 기본 정보
+- [ ] 정확한 주소 (현재: 서울시 강동구 둔촌동)
+- [ ] 전화번호 (현재: 010-XXXX-XXXX)
+- [ ] 실제 운영시간
+- [ ] 주차 정보 (주차 가능 여부, 주차 공간 수 등)
 
-3. **입점 전환율 및 거절 사유 데이터 분석**
-   - 대시보드를 통한 시각화
-   - 거절 사유별 분석
-   - 전환율 추적
+### 2. 강사 정보
+- [ ] 강사님들의 실제 이름
+- [ ] 강사님들의 사진
+- [ ] 강사님들의 경력 및 자격증 정보
+- [ ] 강사님들의 전문 분야
 
-4. **이미 입점된 업체 자동 필터링**
-   - Fuzzy Matching을 통한 자동 매칭
-   - 입점 업체 제외 필터
+### 3. 시설 사진
+- [ ] 스튜디오 내부 사진
+- [ ] 기구 사진 (리포머, 캐딜락 등)
+- [ ] 수업 진행 사진
+- [ ] 로비/대기실 사진
 
-## 기술 스택
+### 4. 후기 및 리뷰
+- [ ] 네이버 플레이스에서 실제 후기 수집
+- [ ] 네이버 블로그 후기 수집
+- [ ] 회원들의 비포/애프터 사진 (허락 받은 경우)
+- [ ] 더 구체적이고 신뢰할 수 있는 후기로 업데이트
 
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Google Sheets API
-- Recharts (차트 시각화)
-- Fuse.js (Fuzzy Matching)
+### 5. 프로그램 정보
+- [ ] 각 프로그램의 정확한 가격 정보
+- [ ] 수업 시간표
+- [ ] 프로그램별 상세 설명
+- [ ] 체험 수업 정보 및 가격
 
-## 설치 및 실행
+### 6. 지도
+- [ ] 네이버 지도 또는 카카오맵 임베드 코드 추가
+- [ ] 교통편 안내 (지하철, 버스 등)
 
-```bash
-npm install
-npm run dev
-```
+### 7. 소셜 미디어
+- [ ] 네이버 블로그 링크
+- [ ] 인스타그램 계정 링크
+- [ ] 카카오톡 채널 링크
 
-## 환경 변수 설정
+## 🚀 GitHub 및 Vercel 배포 가이드
 
-`.env.local` 파일을 생성하고 다음 변수를 설정하세요:
+### 1단계: GitHub 저장소 생성 및 코드 업로드
 
-```
-GOOGLE_SHEETS_CLIENT_EMAIL=your_client_email@example.com
-GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----\n"
-```
+#### 1-1. GitHub에서 새 저장소 생성
+1. [GitHub](https://github.com)에 로그인
+2. 우측 상단의 "+" 버튼 클릭 → "New repository" 선택
+3. 저장소 이름 입력 (예: `allforyou-pilates`)
+4. Public 또는 Private 선택
+5. "Create repository" 클릭
 
-### Google Sheets API 설정 방법
+#### 1-2. 로컬에서 Git 초기화 및 푸시
 
-1. **Google Cloud Console에서 프로젝트 생성**
-   - https://console.cloud.google.com/ 접속
-   - 새 프로젝트 생성
-
-2. **Google Sheets API 활성화**
-   - API 및 서비스 > 라이브러리
-   - "Google Sheets API" 검색 후 활성화
-
-3. **서비스 계정 생성**
-   - API 및 서비스 > 사용자 인증 정보
-   - "사용자 인증 정보 만들기" > "서비스 계정" 선택
-   - 서비스 계정 이름 입력 후 생성
-   - 생성된 서비스 계정의 이메일 주소를 `GOOGLE_SHEETS_CLIENT_EMAIL`에 설정
-
-4. **키 생성**
-   - 생성된 서비스 계정 클릭
-   - "키" 탭 > "키 추가" > "JSON" 선택
-   - 다운로드된 JSON 파일에서 `private_key` 값을 `GOOGLE_SHEETS_PRIVATE_KEY`에 설정
-   - `\n` 문자를 실제 줄바꿈으로 변환하거나 그대로 사용 (코드에서 자동 처리)
-
-5. **스프레드시트 공유 설정**
-   - Google Sheets에서 스프레드시트 열기
-   - "공유" 버튼 클릭
-   - 서비스 계정 이메일 주소를 추가하고 "편집자" 권한 부여
-   - 두 개의 스프레드시트 모두에 동일하게 설정:
-     - 캠핑장 DB: https://docs.google.com/spreadsheets/d/1_laE9Yxj-tajY23k36z3Bg2A_Mds8_V2A81DHnrUO68
-     - 캠핏 입점 리스트: https://docs.google.com/spreadsheets/d/1PHX-Qyk1KrlB8k9r9hEqUckUuQT3PGfu-vJI1R22XyA
-
-## 배포
-
-### Vercel 배포
-
-1. **GitHub에 프로젝트 푸시**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin your-repository-url
-   git push -u origin main
-   ```
-
-2. **Vercel에 프로젝트 연결**
-   - https://vercel.com 접속
-   - "New Project" 클릭
-   - GitHub 저장소 선택
-   - 프로젝트 설정
-
-3. **환경 변수 설정**
-   - Vercel 대시보드에서 프로젝트 선택
-   - Settings > Environment Variables
-   - 다음 변수 추가:
-     - `GOOGLE_SHEETS_CLIENT_EMAIL`
-     - `GOOGLE_SHEETS_PRIVATE_KEY`
-
-4. **배포 완료**
-   - 자동으로 배포가 시작됩니다
-   - 배포 완료 후 제공된 URL로 접속
-
-### 로컬 개발
+**PowerShell 또는 터미널에서 다음 명령어 실행:**
 
 ```bash
-npm install
-npm run dev
+# 프로젝트 폴더로 이동
+cd "C:\Users\김경수\Desktop\커서AI\allforyou-pilates"
+
+# Git 초기화 (아직 안 했다면)
+git init
+
+# 모든 파일 추가
+git add .
+
+# 첫 커밋
+git commit -m "Initial commit: 올포유필라테스 웹사이트"
+
+# GitHub 저장소 연결 (YOUR_USERNAME과 YOUR_REPO_NAME을 실제 값으로 변경)
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+
+# 메인 브랜치로 설정
+git branch -M main
+
+# GitHub에 푸시
+git push -u origin main
 ```
 
-개발 서버는 http://localhost:3000 에서 실행됩니다.
+**또는 GitHub Desktop 사용:**
+1. [GitHub Desktop](https://desktop.github.com/) 다운로드 및 설치
+2. GitHub Desktop 실행 → "File" → "Add Local Repository"
+3. 프로젝트 폴더 선택
+4. "Publish repository" 클릭하여 GitHub에 업로드
 
-## 주요 기능 설명
+### 2단계: Vercel 배포
 
-### 1. 캠핑장 리스트 페이지 (`/list`)
-- Google Sheets에서 캠핑장 데이터를 불러와 표시
-- 다양한 필터 기능 (지역, 운영상태, 유형, 예약시스템, 검색 등)
-- MD 컨택 정보 입력 (행 단위)
-- 입점 여부 자동 표시 (Fuzzy Matching)
-- 엑셀 다운로드 기능
+#### 방법 1: Vercel 웹사이트에서 GitHub 연동 (추천)
 
-### 2. 대시보드 페이지 (`/dashboard`)
-- MD별 활동 현황 (일/주/월 단위)
-- 결과 비율 분석 (차트 시각화)
-- 거절 사유 분석
-- 입점전환 MD 순위
-- 엑셀 다운로드 기능
+1. **Vercel 가입/로그인**
+   - [Vercel 웹사이트](https://vercel.com) 접속
+   - GitHub 계정으로 로그인 (권장)
 
-### 3. 데이터 저장
-- MD 컨택 정보는 Google Sheets의 'MD_Contacts' 시트에 저장됩니다
-- 시트가 없으면 자동으로 생성되거나, 수동으로 생성해야 할 수 있습니다
+2. **프로젝트 추가**
+   - 대시보드에서 "Add New Project" 클릭
+   - GitHub 저장소 목록에서 `allforyou-pilates` 선택
+   - "Import" 클릭
 
-## 주의사항
+3. **프로젝트 설정**
+   - **Framework Preset**: "Other" 또는 "Vite" 선택
+   - **Root Directory**: `./` (기본값 유지)
+   - **Build Command**: 비워두기 (정적 사이트이므로)
+   - **Output Directory**: 비워두기
+   - **Install Command**: 비워두기
 
-1. **Google Sheets 시트 구조**
-   - 캠핑장 DB 시트의 첫 번째 행은 헤더여야 합니다
-   - MD_Contacts 시트는 다음 컬럼을 가져야 합니다:
-     - campingId, mdName, result, rejectionReason, content, contactDate
+4. **환경 변수** (필요한 경우)
+   - 현재는 필요 없음
 
-2. **권한 설정**
-   - 서비스 계정에 스프레드시트 편집 권한이 있어야 합니다
-   - 두 개의 스프레드시트 모두 공유 설정을 확인하세요
+5. **배포**
+   - "Deploy" 버튼 클릭
+   - 배포 완료 후 자동으로 URL 생성 (예: `allforyou-pilates.vercel.app`)
 
-3. **데이터 동기화**
-   - 데이터는 실시간으로 Google Sheets와 동기화됩니다
-   - 변경사항은 즉시 반영됩니다
+6. **도메인 설정** (선택사항)
+   - 프로젝트 설정 → Domains
+   - 원하는 도메인 추가
+
+#### 방법 2: Vercel CLI 사용
+
+```bash
+# Vercel CLI 설치
+npm i -g vercel
+
+# 프로젝트 폴더로 이동
+cd "C:\Users\김경수\Desktop\커서AI\allforyou-pilates"
+
+# Vercel 로그인
+vercel login
+
+# 배포 (처음은 개발 환경)
+vercel
+
+# 프로덕션 배포
+vercel --prod
+```
+
+### 3단계: 자동 배포 설정
+
+GitHub와 Vercel을 연동하면:
+- GitHub에 코드를 푸시할 때마다 자동으로 배포됩니다
+- Pull Request를 생성하면 미리보기 배포가 생성됩니다
+
+### 4단계: 업데이트 방법
+
+코드를 수정한 후:
+
+```bash
+# 변경사항 추가
+git add .
+
+# 커밋
+git commit -m "업데이트 내용 설명"
+
+# GitHub에 푸시
+git push
+
+# Vercel이 자동으로 배포합니다!
+```
+
+### 문제 해결
+
+**이미지가 표시되지 않는 경우:**
+- 이미지 경로가 상대 경로인지 확인
+- 모든 이미지 파일이 GitHub에 업로드되었는지 확인
+
+**배포 후 스타일이 깨지는 경우:**
+- 브라우저 캐시 삭제 (Ctrl + Shift + Delete)
+- Vercel에서 "Redeploy" 실행
+
+**도메인 설정:**
+- Vercel 프로젝트 설정 → Domains에서 커스텀 도메인 추가 가능
+
+## 📁 파일 구조
+
+```
+allforyou-pilates/
+├── index.html          # 메인 HTML 파일
+├── styles.css          # 스타일시트
+├── script.js           # JavaScript 파일
+├── package.json        # 프로젝트 설정
+├── vercel.json         # Vercel 배포 설정
+└── README.md           # 이 파일
+```
+
+## 🎨 커스터마이징
+
+### 색상 변경
+`styles.css` 파일의 `:root` 섹션에서 색상을 변경할 수 있습니다:
+
+```css
+:root {
+    --primary-color: #6B8E9F;    /* 메인 색상 */
+    --secondary-color: #D4A574;  /* 보조 색상 */
+    --accent-color: #8B9A8F;     /* 강조 색상 */
+}
+```
+
+### 폰트 변경
+`index.html`의 Google Fonts 링크를 변경하거나, `styles.css`의 `font-family`를 수정하세요.
+
+## 📝 문의 폼 연동
+
+현재 문의 폼은 클라이언트 사이드에서만 작동합니다. 실제로 데이터를 받으려면:
+
+1. 백엔드 API 엔드포인트 생성
+2. `script.js`의 폼 제출 핸들러에서 실제 API 호출
+3. 또는 서비스 사용 (예: Formspree, EmailJS 등)
+
+## 🔧 기술 스택
+
+- HTML5
+- CSS3 (Flexbox, Grid)
+- Vanilla JavaScript
+- Vercel (배포)
+
+## 📞 지원
+
+문제가 발생하거나 질문이 있으시면 언제든지 문의해주세요.

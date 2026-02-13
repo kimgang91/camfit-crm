@@ -1,30 +1,18 @@
 {
-  "name": "campfit-crm",
+  "name": "allforyou-pilates",
   "version": "1.0.0",
-  "private": true,
+  "description": "올포유필라테스 홍보 웹사이트",
+  "main": "index.html",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "npx serve .",
+    "build": "echo 'Static site - no build needed'"
   },
-  "dependencies": {
-    "next": "14.1.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "googleapis": "^128.0.0",
-    "fuse.js": "^7.0.0",
-    "recharts": "^2.10.3",
-    "date-fns": "^3.0.0",
-    "xlsx": "^0.18.5"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "typescript": "^5",
-    "autoprefixer": "^10.0.1",
-    "postcss": "^8",
-    "tailwindcss": "^3.3.0"
-  }
+  "keywords": [
+    "pilates",
+    "fitness",
+    "강동구",
+    "둔촌동"
+  ],
+  "author": "",
+  "license": "MIT"
 }
